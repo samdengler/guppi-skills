@@ -9,10 +9,23 @@ Skills work from the terminal for humans and from agents (Claude Code, Copilot, 
 ### Tech Stack
 
 - **Python 3.11+** — minimum version
-- **Typer** — CLI framework
+- **Typer** — CLI framework (all skills use this)
+- **Rich** — console output formatting (tables, panels, colors)
 - **uv** — package manager and tool installer
 - **hatchling** — build backend
 - **pytest** — testing
+
+### Library Preferences
+
+Prefer the Python standard library over third-party packages. The guppi ecosystem is intentionally lean.
+
+- **CLI:** Typer + Rich (already dependencies — use them freely)
+- **TOML parsing:** `tomllib` (stdlib, Python 3.11+)
+- **Paths:** `pathlib.Path` (not `os.path`)
+- **Subprocesses:** `subprocess.run` (not `os.system`)
+- **Type hints:** `typing.Annotated` for Typer args/options (stdlib, Python 3.9+)
+- **Testing:** pytest + `typer.testing.CliRunner`
+- **Avoid** adding new third-party dependencies unless clearly necessary
 
 ### Issue Tracking
 
@@ -166,7 +179,7 @@ Every skill has a Typer app with:
 """GUPPI <name> skill CLI"""
 
 import typer
-from typing_extensions import Annotated
+from typing import Annotated
 
 app = typer.Typer(help="<one-line description>")
 

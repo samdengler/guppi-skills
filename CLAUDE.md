@@ -47,12 +47,26 @@ Each skill lives in its own top-level directory:
 <name>/
 ├── pyproject.toml          # Package metadata, entry points, build config
 ├── SKILL.md                # Agent Skills manifest (bundled into wheel)
+├── docs/
+│   └── design/             # Feature design docs (iterate before implementing)
+│       └── YYYY-MM-DD-slug.md
 └── src/
     └── guppi_<name>/
         ├── __init__.py     # Version: __version__ = "0.1.0"
         ├── cli.py          # Typer app with commands + skill subcommand group
         └── ...             # Additional modules as needed
 ```
+
+### Design Docs
+
+Each skill has a `docs/design/` directory for planning features before implementation.
+
+**Workflow:**
+1. Create a design doc in `<name>/docs/design/YYYY-MM-DD-slug.md`
+2. Iterate on the design with the user
+3. Once the design is agreed upon, create beads issues to plan and track implementation
+
+**Naming:** `YYYY-MM-DD-slug.md` (e.g., `2026-02-12-caching-layer.md`)
 
 ### Naming Conventions
 

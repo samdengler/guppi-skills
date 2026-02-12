@@ -1,0 +1,4 @@
+[tool.guppi.source]
+name = "guppi-skills"
+description = "Personal workflow automation skills"
+version = "1.0.0"

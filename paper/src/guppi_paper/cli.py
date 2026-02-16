@@ -68,8 +68,9 @@ app.add_typer(skill_app, name="skill")
 def install():
     """Register this skill with guppi-cli."""
     skill_md = _get_skill_md_path()
+    skill_dir = skill_md.parent
     result = subprocess.run(
-        ["guppi", "skill", "install", str(skill_md)],
+        ["guppi", "skill", "install", "paper", "--from", str(skill_dir), "--yes"],
         capture_output=True, text=True,
     )
     if result.returncode == 0:

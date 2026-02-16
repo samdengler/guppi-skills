@@ -1,0 +1,30 @@
+[project]
+name = "guppi-paper"
+version = "0.1.0"
+description = "Analyze academic papers using the Feynman Technique"
+requires-python = ">=3.11"
+dependencies = [
+    "typer>=0.9.0",
+]
+
+[project.scripts]
+guppi-paper = "guppi_paper.cli:app"
+
+[tool.guppi]
+name = "paper"
+description = "Analyze academic papers using the Feynman Technique"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[dependency-groups]
+dev = [
+    "pytest>=9.0.2",
+]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/guppi_paper"]
+
+[tool.hatch.build.targets.wheel.force-include]
+"SKILL.md" = "guppi_paper/SKILL.md"

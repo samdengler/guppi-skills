@@ -45,7 +45,7 @@ bd sync --flush-only        # Export to JSONL
 uv sync                     # Install dependencies (from skill directory)
 uv run guppi-<name> --help  # Run skill locally
 uv run pytest               # Run tests
-uv tool install .           # Install skill globally (from skill directory)
+guppi skill install <name>  # Install skill globally via guppi CLI
 ```
 
 ### Releasing a Skill
@@ -55,7 +55,7 @@ Each skill is versioned and tagged independently. No repo-wide releases. See `RE
 1. **Bump version** in 3 files: `<name>/pyproject.toml`, `<name>/src/guppi_<name>/__init__.py`, `<name>/SKILL.md`
 2. **Commit**: `git commit -m "Bump <name> to X.Y.Z"`
 3. **Tag**: `git tag -a <name>/vX.Y.Z -m "<name> version X.Y.Z"` — push tag
-4. **Verify**: `cd <name>/ && uv tool install . && guppi-<name> --help`
+4. **Verify**: `guppi skill update <name> && guppi-<name> --help`
 
 Tag format: `<name>/vX.Y.Z` (e.g., `spiker/v0.2.0`). Prompt for bump type if not specified.
 
@@ -260,32 +260,53 @@ __version__ = "0.1.0"
 
 ### Installation Workflow
 
-Skills can be installed three ways:
+**Prefer guppi CLI** for installing and updating skills. It handles both `uv tool install` and SKILL.md registration in one step.
 
-1. **uv direct** — install from the repo:
+1. **guppi CLI** (preferred) — install and register in one step:
+   ```bash
+   guppi skill install <name>                        # Install from sources
+   guppi skill install <name> --source guppi-skills  # Install from specific source
+   guppi skill install <name> --from ./<name>        # Install from local path
+   ```
+
+2. **Per-skill command** — register an already-installed skill:
+   ```bash
+   guppi-<name> skill install
+   ```
+
+3. **uv direct** — install without guppi registration (dev only):
    ```bash
    cd <name>/
    uv tool install .
    ```
 
-2. **guppi-cli** — register for agent discovery:
-   ```bash
-   guppi-<name> skill install
-   ```
+### Updating Skills
 
-3. **uvx ephemeral** — run without installing:
-   ```bash
-   uvx --from ./path/to/<name> guppi-<name> <command>
-   ```
+Use guppi CLI to update sources and skills. Do NOT use `uv tool upgrade` directly.
+
+```bash
+# Update sources (git pull latest from registered repos)
+guppi skill source update                # Update all sources
+guppi skill source update guppi-skills   # Update specific source
+
+# Update installed skills (reinstalls from source)
+guppi skill update              # Update all installed guppi-* skills
+guppi skill update <name>       # Update specific skill
+```
+
+**Typical update workflow** after pushing changes to a skill:
+```bash
+guppi skill source update    # Pull latest source
+guppi skill update <name>    # Reinstall skill from updated source
+```
 
 ### Validating a New Skill
 
 After creating a skill, verify end-to-end:
 
 ```bash
-# 1. Build and install
-cd <name>/
-uv tool install .
+# 1. Install via guppi CLI
+guppi skill install <name> --from ./<name>
 
 # 2. Run the CLI
 guppi-<name> --help
@@ -293,11 +314,11 @@ guppi-<name> <main-command> <test-args>
 
 # 3. Verify skill management
 guppi-<name> skill show        # Should print SKILL.md contents
-guppi-<name> skill install     # Should register with guppi-cli
 
 # 4. Run tests
+cd <name>/
 uv run pytest
 
 # 5. Clean up (optional)
-uv tool uninstall guppi-<name>
+guppi skill uninstall <name>
 ```

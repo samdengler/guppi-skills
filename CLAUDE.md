@@ -48,6 +48,17 @@ uv run pytest               # Run tests
 uv tool install .           # Install skill globally (from skill directory)
 ```
 
+### Releasing a Skill
+
+Each skill is versioned and tagged independently. No repo-wide releases. See `RELEASE.md` for full details.
+
+1. **Bump version** in 3 files: `<name>/pyproject.toml`, `<name>/src/guppi_<name>/__init__.py`, `<name>/SKILL.md`
+2. **Commit**: `git commit -m "Bump <name> to X.Y.Z"`
+3. **Tag**: `git tag -a <name>/vX.Y.Z -m "<name> version X.Y.Z"` — push tag
+4. **Verify**: `cd <name>/ && uv tool install . && guppi-<name> --help`
+
+Tag format: `<name>/vX.Y.Z` (e.g., `spiker/v0.2.0`). Prompt for bump type if not specified.
+
 ---
 
 ## Skill Design Spec

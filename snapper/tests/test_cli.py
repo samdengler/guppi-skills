@@ -80,6 +80,37 @@ def test_profile_delete_not_found(tmp_path, monkeypatch):
     assert "not found" in result.output
 
 
+def test_init_help():
+    result = runner.invoke(app, ["init", "--help"])
+    assert result.exit_code == 0
+    assert "Set up snapper" in result.output
+
+
+def test_init_creates_directories(tmp_path, monkeypatch):
+    monkeypatch.setenv("XDG_DATA_HOME", str(tmp_path))
+    # Mock find_chromium_binary to return a fake path (avoid real playwright)
+    fake_chromium = tmp_path / "fake-chromium"
+    fake_chromium.touch()
+    monkeypatch.setattr(
+        "guppi_snapper.browser.find_chromium_binary",
+        lambda: fake_chromium,
+    )
+    result = runner.invoke(app, ["init"])
+    assert result.exit_code == 0
+    assert (tmp_path / "guppi" / "snapper" / "profiles").is_dir()
+    assert (tmp_path / "guppi" / "snapper" / "extensions").is_dir()
+    assert "ready" in result.output.lower()
+
+
+def test_start_without_chromium(tmp_path, monkeypatch):
+    monkeypatch.setenv("XDG_DATA_HOME", str(tmp_path))
+    monkeypatch.setattr("guppi_snapper.browser.find_chromium_binary", lambda: None)
+    monkeypatch.setattr("guppi_snapper.browser.is_port_in_use", lambda port: False)
+    result = runner.invoke(app, ["start"])
+    assert result.exit_code == 1
+    assert "guppi-snapper init" in result.output
+
+
 def test_profile_list_shows_profiles(tmp_path, monkeypatch):
     monkeypatch.setenv("XDG_DATA_HOME", str(tmp_path))
     runner.invoke(app, ["profile", "create", "alpha"])

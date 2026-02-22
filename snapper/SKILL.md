@@ -15,6 +15,10 @@ Captures pixel-perfect PNG screenshots of authenticated web pages using Playwrig
 
 ## Commands
 
+### `guppi-snapper init`
+
+Set up snapper: install Playwright's bundled Chromium and create the directory structure (profiles, extensions). Run once after installing snapper.
+
 ### `guppi-snapper start [--profile NAME] [--port PORT]`
 
 Launch Chromium with CDP enabled using a named profile.
@@ -69,6 +73,9 @@ Delete a profile directory (with confirmation).
 ## Examples
 
 ```bash
+# First-time setup
+guppi-snapper init
+
 # Start Chromium with default profile
 guppi-snapper start
 

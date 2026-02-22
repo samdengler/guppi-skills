@@ -9,7 +9,38 @@ import typer
 app = typer.Typer(help="CDP browser screenshots for capturing authenticated web pages")
 
 
-# --- Domain commands (stubs wired in later issues) ---
+# --- Domain commands ---
+
+
+@app.command()
+def init():
+    """Set up snapper: install Chromium and create directory structure."""
+    from rich.console import Console
+
+    from guppi_snapper.browser import find_chromium_binary, install_chromium
+    from guppi_snapper.paths import data_dir, extensions_dir, profiles_dir
+
+    console = Console()
+
+    # Create directory structure
+    for d in [profiles_dir(), extensions_dir()]:
+        d.mkdir(parents=True, exist_ok=True)
+    console.print(f"[green]✓[/green] Data directory: {data_dir()}")
+
+    # Install Chromium if needed
+    chromium = find_chromium_binary()
+    if chromium:
+        console.print(f"[green]✓[/green] Chromium already installed: {chromium}")
+    else:
+        console.print("Installing Playwright Chromium...")
+        if install_chromium():
+            chromium = find_chromium_binary()
+            console.print(f"[green]✓[/green] Chromium installed: {chromium}")
+        else:
+            console.print("[red]✗[/red] Failed to install Chromium", style="bold red")
+            raise typer.Exit(1)
+
+    console.print("\n[bold green]Snapper is ready![/bold green] Run [bold]guppi-snapper start[/bold] to launch Chromium.")
 
 
 @app.command()
@@ -31,6 +62,10 @@ def start(
         raise typer.Exit(1)
 
     chromium = find_chromium_binary()
+    if not chromium:
+        typer.echo("Error: Chromium is not installed. Run 'guppi-snapper init' first.", err=True)
+        raise typer.Exit(1)
+
     prof_dir = profile_path(profile)
     prof_dir.mkdir(parents=True, exist_ok=True)
 

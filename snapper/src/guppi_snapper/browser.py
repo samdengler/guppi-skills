@@ -13,21 +13,24 @@ from urllib.request import urlopen
 from guppi_snapper.paths import state_file
 
 
-def find_chromium_binary() -> Path:
-    """Find Playwright's bundled Chromium binary."""
-    from playwright._impl._driver import compute_driver_executable
-
-    driver_exec = compute_driver_executable()
-    # Playwright stores browsers relative to the driver
-    # Use playwright's registry to find chromium
-    result = subprocess.run(
-        [str(driver_exec), "install", "--dry-run", "chromium"],
-        capture_output=True, text=True,
-    )
-    # Fallback: find it via the standard playwright path
+def find_chromium_binary() -> Path | None:
+    """Find Playwright's bundled Chromium binary. Returns None if not installed."""
     from playwright.sync_api import sync_playwright
+
     with sync_playwright() as p:
-        return Path(p.chromium.executable_path)
+        path = Path(p.chromium.executable_path)
+        if path.exists():
+            return path
+    return None
+
+
+def install_chromium() -> bool:
+    """Install Playwright's bundled Chromium. Returns True on success."""
+    result = subprocess.run(
+        ["playwright", "install", "chromium"],
+        capture_output=False,
+    )
+    return result.returncode == 0
 
 
 def is_port_in_use(port: int) -> bool:

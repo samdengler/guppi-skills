@@ -57,10 +57,10 @@ def test_load_capture_missing_output(tmp_path):
 
 
 def test_resolve_capture_uses_defaults():
-    defaults = {"viewport": "1400x1092", "wait": 8, "output_dir": "./shots"}
+    defaults = {"viewport": "1400x1365", "wait": 8, "output_dir": "./shots"}
     capture = {"url": "https://example.com", "output": "test.png"}
     result = resolve_capture(capture, defaults)
-    assert result["viewport"] == "1400x1092"
+    assert result["viewport"] == "1400x1365"
     assert result["wait"] == 8
     assert result["output_dir"] == "./shots"
     assert result["url"] == "https://example.com"
@@ -68,7 +68,7 @@ def test_resolve_capture_uses_defaults():
 
 
 def test_resolve_capture_override():
-    defaults = {"viewport": "1400x1092", "wait": 8, "output_dir": "."}
+    defaults = {"viewport": "1400x1365", "wait": 8, "output_dir": "."}
     capture = {
         "url": "https://example.com",
         "output": "test.png",
@@ -83,9 +83,41 @@ def test_resolve_capture_override():
 def test_resolve_capture_empty_defaults():
     capture = {"url": "https://example.com", "output": "test.png"}
     result = resolve_capture(capture, {})
-    assert result["viewport"] == "1400x1092"
+    assert result["viewport"] == "1400x1365"
     assert result["wait"] == 5
     assert result["output_dir"] == "."
+    assert result["existing"] is False
+    assert result["resize"] is None
+
+
+def test_resolve_capture_existing_flag():
+    defaults = {"viewport": "1400x1365", "wait": 5}
+    capture = {"url": "spreadsheets", "output": "sheet.png", "existing": True, "wait": 3}
+    result = resolve_capture(capture, defaults)
+    assert result["existing"] is True
+    assert result["wait"] == 3
+
+
+def test_resolve_capture_resize_from_defaults():
+    defaults = {"viewport": "1400x1365", "resize": "1120x1092"}
+    capture = {"url": "https://example.com", "output": "test.png"}
+    result = resolve_capture(capture, defaults)
+    assert result["resize"] == "1120x1092"
+
+
+def test_resolve_capture_resize_null_override():
+    """Setting resize to None in a capture disables the global default."""
+    defaults = {"viewport": "1400x1365", "resize": "1120x1092"}
+    capture = {"url": "https://example.com", "output": "test.png", "resize": None}
+    result = resolve_capture(capture, defaults)
+    assert result["resize"] is None
+
+
+def test_resolve_capture_resize_per_capture():
+    defaults = {"viewport": "1400x1365", "resize": "1120x1092"}
+    capture = {"url": "https://example.com", "output": "test.png", "resize": "800x600"}
+    result = resolve_capture(capture, defaults)
+    assert result["resize"] == "800x600"
 
 
 def test_load_invalid_yaml(tmp_path):

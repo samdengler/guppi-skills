@@ -33,6 +33,8 @@ def test_capture_help():
     assert "--output" in result.output
     assert "--viewport" in result.output
     assert "--wait" in result.output
+    assert "--existing" in result.output
+    assert "--resize" in result.output
 
 
 def test_batch_help():

@@ -132,17 +132,20 @@ def stop():
 
 @app.command()
 def capture(
-    url: Annotated[str, typer.Argument(help="URL to capture")],
+    url: Annotated[str, typer.Argument(help="URL to capture (or URL pattern with --existing)")],
     output: Annotated[str, typer.Option("--output", "-o", help="Output file path")] = "screenshot.png",
-    viewport: Annotated[str, typer.Option("--viewport", "-v", help="Viewport dimensions (WxH)")] = "1400x1092",
+    viewport: Annotated[str, typer.Option("--viewport", "-v", help="Viewport dimensions (WxH)")] = "1400x1365",
+    resize: Annotated[str | None, typer.Option("--resize", "-r", help="Resize to WxH after capture")] = None,
     wait: Annotated[int, typer.Option("--wait", "-w", help="Seconds to wait after load")] = 5,
+    existing: Annotated[bool, typer.Option("--existing", "-e", help="Capture an already-open tab matching URL pattern")] = False,
     port: Annotated[int, typer.Option(help="CDP port")] = 9222,
 ):
     """Navigate to a URL and capture a screenshot."""
     from guppi_snapper.capture import parse_viewport, take_screenshot
 
     width, height = parse_viewport(viewport)
-    take_screenshot(port, url, output, width, height, wait)
+    resize_dims = parse_viewport(resize) if resize else None
+    take_screenshot(port, url, output, width, height, wait, existing=existing, resize=resize_dims)
     typer.echo(f"Screenshot saved to {output}")
 
 
@@ -162,9 +165,11 @@ def batch(
     config = load_batch_config(config_file)
     captures = config["captures"]
     defaults = {
-        "viewport": config.get("viewport", "1400x1092"),
+        "viewport": config.get("viewport", "1400x1365"),
         "wait": config.get("wait", 5),
         "output_dir": config.get("output_dir", "."),
+        "resize": config.get("resize"),
+        "existing": config.get("existing", False),
     }
 
     with Progress(console=console) as progress:
@@ -173,7 +178,11 @@ def batch(
             resolved = resolve_capture(cap, defaults)
             width, height = parse_viewport(resolved["viewport"])
             output_path = str(Path(resolved["output_dir"]) / resolved["output"])
-            take_screenshot(port, resolved["url"], output_path, width, height, resolved["wait"])
+            resize_dims = parse_viewport(resolved["resize"]) if resolved.get("resize") else None
+            take_screenshot(
+                port, resolved["url"], output_path, width, height,
+                resolved["wait"], existing=resolved["existing"], resize=resize_dims,
+            )
             console.print(f"  [green]✓[/green] {resolved['output']}")
             progress.advance(task)
 

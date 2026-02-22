@@ -10,16 +10,21 @@ def load_batch_config(path: Path) -> dict:
     """Parse a YAML batch config file.
 
     Expected format:
-        viewport: 1400x1092
+        viewport: 1400x1365
+        resize: 1120x1092
         wait: 8
         output_dir: ./screenshots
         captures:
           - url: https://example.com
             output: example.png
-          - url: https://other.com
-            output: other.png
+          - url: spreadsheets
+            existing: true
+            output: sheet.png
+            wait: 3
+          - url: http://localhost:8888/admin
+            output: admin.png
             viewport: 1120x1092
-            wait: 5
+            resize: null
     """
     if not path.exists():
         typer.echo(f"Error: config file not found: {path}", err=True)
@@ -53,12 +58,19 @@ def load_batch_config(path: Path) -> dict:
 def resolve_capture(capture: dict, defaults: dict) -> dict:
     """Merge a single capture entry with global defaults.
 
-    Per-capture values override defaults for viewport, wait, output_dir.
+    Per-capture values override defaults for viewport, wait, output_dir,
+    existing, and resize. Setting resize to null in a capture disables
+    the global resize default for that entry.
     """
+    # resize: None means "not set", explicit null in YAML disables global default
+    resize = capture.get("resize", defaults.get("resize"))
+
     return {
         "url": capture["url"],
         "output": capture["output"],
-        "viewport": capture.get("viewport", defaults.get("viewport", "1400x1092")),
+        "viewport": capture.get("viewport", defaults.get("viewport", "1400x1365")),
         "wait": capture.get("wait", defaults.get("wait", 5)),
         "output_dir": capture.get("output_dir", defaults.get("output_dir", ".")),
+        "existing": capture.get("existing", defaults.get("existing", False)),
+        "resize": resize,
     }

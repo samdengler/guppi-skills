@@ -94,6 +94,8 @@ Each skill has a `docs/design/` directory for planning features before implement
 
 ### Naming Conventions
 
+Skill names should be **pithy, short "-er" verbs** that describe what the skill does (e.g., `spiker`, `snapper`, `clipper`, `courier`). Think action words, not nouns.
+
 | Thing | Convention | Example |
 |-------|-----------|---------|
 | Directory | `<name>` | `spiker` |
@@ -102,6 +104,7 @@ Each skill has a `docs/design/` directory for planning features before implement
 | CLI command | `guppi-<name>` | `guppi-spiker` |
 | Typer app var | `app` | `app = typer.Typer(...)` |
 | `[tool.guppi] name` | `<name>` | `spiker` |
+| Config directory | `~/.config/guppi/<name>/` | `~/.config/guppi/locker/` |
 
 ### pyproject.toml Template
 

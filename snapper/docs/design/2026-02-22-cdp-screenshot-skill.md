@@ -88,21 +88,33 @@ guppi-snapper status
 # Tabs: 3 (google.com, localhost:8888, docs.google.com/...)
 ```
 
-### `guppi-snapper capture URL [--output FILE] [--viewport WxH] [--wait SECONDS]`
+### `guppi-snapper capture URL [--output FILE] [--viewport WxH] [--resize WxH] [--wait SECONDS] [--existing]`
 
 Navigate to a URL and capture a screenshot.
 
 - `--output` defaults to `screenshot.png`
-- `--viewport` defaults to `1400x1092`
+- `--viewport` defaults to `1400x1365`
+- `--resize` — optional target dimensions. If set, proportionally resize the captured image (e.g., `--resize 1120x1092` after capturing at `1400x1365`). Viewport and resize must share the same aspect ratio.
 - `--wait` defaults to `5` (seconds after load to let SPAs render)
+- `--existing` — capture an already-open tab matching the URL pattern instead of navigating a new page. Preserves cell selection, scroll position, and UI state. Essential for canvas-based apps like Google Sheets.
 - Uses `browser.contexts()[0]` to reuse existing auth
 - Uses `waitUntil: 'load'` (not `networkidle` — SPAs never go idle)
 
 ```bash
+# Navigate to URL and capture
 guppi-snapper capture https://docs.google.com/spreadsheets/d/ID/edit \
   --output step-2-sheet.png \
-  --viewport 1400x1092 \
+  --viewport 1400x1365 \
+  --resize 1120x1092 \
   --wait 8
+
+# Capture existing tab (preserves cell selection state)
+guppi-snapper capture spreadsheets \
+  --existing \
+  --output step-3-sheet-selected.png \
+  --viewport 1400x1365 \
+  --resize 1120x1092 \
+  --wait 3
 ```
 
 ### `guppi-snapper batch CONFIG_FILE`
@@ -111,7 +123,8 @@ Capture multiple screenshots from a YAML/JSON config file. Enables repeatable ca
 
 ```yaml
 # screenshots.yaml
-viewport: 1400x1092
+viewport: 1400x1365
+resize: 1120x1092
 wait: 8
 output_dir: ./public/screenshots
 
@@ -120,15 +133,15 @@ captures:
     output: step-2-sheet-pending.png
     wait: 8
 
-  - url: https://docs.google.com/spreadsheets/d/ID/edit
+  - url: spreadsheets
+    existing: true        # capture already-open tab (preserves cell state)
     output: step-3-sheet-selected.png
-    wait: 5
-    actions:
-      - click: "F25"  # future: click on elements before capture
+    wait: 3
 
   - url: http://localhost:8888/admin
     output: step-1-dashboard.png
-    viewport: 1120x1092
+    viewport: 1120x1092   # override — no resize needed for localhost
+    resize: null
 ```
 
 ```bash
@@ -155,28 +168,79 @@ Gracefully shut down the CDP Chromium instance.
 
 ### Playwright CDP Connection
 
+Two modes: **navigate to URL** (new page) or **capture existing tab** (reuse page state).
+
 ```python
 from playwright.sync_api import sync_playwright
 
 with sync_playwright() as p:
     browser = p.chromium.connect_over_cdp(f"http://localhost:{port}")
     context = browser.contexts[0]  # MUST reuse existing context for auth
+
+    # Mode 1: Navigate to URL (new page)
     page = context.new_page()
     page.set_viewport_size({"width": width, "height": height})
     page.goto(url, wait_until="load", timeout=60000)
     page.wait_for_timeout(wait_ms)
     page.screenshot(path=output, type="png")
+
+    # Mode 2: Capture existing tab (preserves cell selection, scroll, UI state)
+    page = next(p for p in context.pages if "spreadsheets" in p.url)
+    page.set_viewport_size({"width": width, "height": height})
+    page.wait_for_timeout(wait_ms)  # let viewport change settle
+    page.screenshot(path=output, type="png")
 ```
 
-### Gotchas to Handle
+Mode 2 is critical for canvas-based apps like Google Sheets where cell selection and scroll position can't be set via Playwright DOM interaction.
+
+### Proportional Capture and Resize
+
+When the target output size differs from the capture viewport, capture at a proportional scale and resize with ImageMagick:
+
+```bash
+# Target: 1120x1092. Capture at 1.25x → 1400x1365
+guppi-snapper capture URL --viewport 1400x1365 --output raw.png
+
+# Resize proportionally (NEVER use ! flag — it squishes)
+magick raw.png -resize 1120x1092 final.png
+```
+
+The key: both dimensions must scale by the **same factor** (1400/1120 = 1365/1092 = 1.25). ImageMagick's `-resize WxH` (without `!`) preserves aspect ratio automatically.
+
+### Finding Element Coordinates with ImageMagick
+
+Instead of guessing button positions in screenshots, scan for color signatures:
+
+```bash
+# Find orange button center by scanning for its color
+for y in $(seq 280 5 400); do
+  for x in $(seq 550 20 800); do
+    color=$(magick screenshot.png -crop 1x1+${x}+${y} \
+      -format '%[fx:int(255*r)],%[fx:int(255*g)],%[fx:int(255*b)]' info:)
+    r=$(echo $color | cut -d, -f1)
+    g=$(echo $color | cut -d, -f2)
+    b=$(echo $color | cut -d, -f3)
+    if [ "$r" -gt 180 ] && [ "$g" -lt 150 ] && [ "$b" -lt 100 ]; then
+      echo "ORANGE at ($x,$y)"
+    fi
+  done
+done
+# Average min/max x,y to find button center
+```
+
+This is essential for Remotion compositions — cursor animations need pixel-accurate targets.
+
+### Gotchas
 
 1. **Always `browser.contexts[0]`** — `browser.new_context()` creates a fresh context without cookies/auth
-2. **`wait_until='load'`** not `'networkidle'` — Google Sheets and SPAs never stop making requests
-3. **Extra wait after load** — SPAs need time to render dynamic content after the load event
-4. **Chromium launch requires `--user-data-dir`** — Chromium refuses `--remote-debugging-port` with the default profile. Error: "DevTools remote debugging requires a non-default data directory"
-5. **`process.exit()`** — `browser.close()` shuts down Chromium entirely. Just disconnect or exit the script.
-6. **Viewport width** — Must be wide enough to show all target content (e.g., 1400px for Google Sheets to show all columns)
-7. **Extensions via `--load-extension`** — Only works with unpacked extensions (directories, not .crx files). Extensions are loaded at launch, not dynamically.
+2. **Reuse existing tabs when possible** — `context.pages` returns all open tabs. Use `next(p for p in context.pages if "keyword" in p.url)` to find a specific tab. `context.new_page()` creates a separate tab that won't have the same cell selection, scroll position, or UI state.
+3. **`wait_until='load'`** not `'networkidle'` — Google Sheets and SPAs never stop making requests
+4. **Extra wait after load** — SPAs need time to render dynamic content after the load event
+5. **Chromium launch requires `--user-data-dir`** — Chromium refuses `--remote-debugging-port` with the default profile. Error: "DevTools remote debugging requires a non-default data directory"
+6. **`process.exit()`** — `browser.close()` shuts down Chromium entirely. Just disconnect or exit the script.
+7. **Viewport width** — Must be wide enough to show all target content (e.g., 1400px for Google Sheets to show all columns)
+8. **Extensions via `--load-extension`** — Only works with unpacked extensions (directories, not .crx files). Extensions are loaded at launch, not dynamically.
+9. **Canvas-based apps (Google Sheets)** — DOM selectors don't work for cell interaction. Use a browser extension or CDP Input domain for clicks/typing, then Playwright for the screenshot capture only.
 
 ### Dependencies
 

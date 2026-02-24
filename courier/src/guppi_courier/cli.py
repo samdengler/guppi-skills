@@ -1,6 +1,7 @@
 """GUPPI courier skill CLI"""
 
 import sys
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Annotated
 
@@ -19,12 +20,12 @@ err_console = Console(stderr=True)
 
 
 @app.command()
-def pull(
+def receive(
     bot: Annotated[str | None, typer.Option("--bot", "-b", help="Bot name from registry")] = None,
     output: Annotated[str | None, typer.Option("--output", "-o", help="Directory for downloaded files")] = None,
     keep: Annotated[bool, typer.Option("--keep", help="Don't acknowledge messages")] = False,
 ):
-    """Fetch the latest messages from a bot."""
+    """Receive the latest messages from a bot."""
     name, _ = config.get_bot(bot)
     token = config.get_token(name)
     offset = config.get_offset(name)
@@ -34,7 +35,8 @@ def pull(
         typer.echo("No new messages")
         return
 
-    output_dir = Path(output) if output else Path.cwd()
+    output_dir = Path(output) if output else config.get_inbox_today(name)
+    output_dir.mkdir(parents=True, exist_ok=True)
     max_update_id = offset
 
     for update in updates:
@@ -49,17 +51,28 @@ def pull(
         if chat_id:
             config.set_chat_id(name, chat_id)
 
+        # Message timestamp for text file naming
+        msg_date = msg.get("date")
+        if msg_date:
+            ts = datetime.fromtimestamp(msg_date, tz=timezone.utc).astimezone()
+            time_str = ts.strftime("%H%M%S")
+        else:
+            time_str = datetime.now().strftime("%H%M%S")
+
         # Handle text
         text = msg.get("text")
         if text:
             typer.echo(text)
+            dest = config.deduplicate_path(output_dir / f"{time_str}.md")
+            dest.write_text(text)
+            err_console.print(f"Saved: {dest}")
 
         # Handle documents
         doc = msg.get("document")
         if doc:
             file_info = telegram.get_file(token, doc["file_id"])
             file_name = doc.get("file_name", f"document_{update_id}")
-            dest = output_dir / file_name
+            dest = config.deduplicate_path(output_dir / file_name)
             telegram.download_file(token, file_info["file_path"], dest)
             err_console.print(f"Downloaded: {dest}")
 
@@ -70,7 +83,7 @@ def pull(
             file_info = telegram.get_file(token, best["file_id"])
             remote_path = file_info["file_path"]
             file_name = Path(remote_path).name
-            dest = output_dir / file_name
+            dest = config.deduplicate_path(output_dir / file_name)
             telegram.download_file(token, remote_path, dest)
             err_console.print(f"Downloaded: {dest}")
 
@@ -79,7 +92,7 @@ def pull(
 
 
 @app.command()
-def push(
+def send(
     message: Annotated[str | None, typer.Argument(help="Text to send")] = None,
     bot: Annotated[str | None, typer.Option("--bot", "-b", help="Bot name from registry")] = None,
     file: Annotated[str | None, typer.Option("--file", "-f", help="File to send as document")] = None,
@@ -135,6 +148,16 @@ def peek(
             typer.echo(f"[file] {doc.get('file_name', 'unnamed')}")
         if photos:
             typer.echo("[photo]")
+
+
+@app.command()
+def inbox(
+    bot: Annotated[str | None, typer.Argument(help="Bot name from registry")] = None,
+    today: Annotated[bool, typer.Option("--today", help="Show today's inbox subdirectory")] = False,
+):
+    """Print the inbox path for a bot."""
+    name, _ = config.get_bot(bot)
+    typer.echo(str(config.get_inbox_path(name, today=today)))
 
 
 @app.command()

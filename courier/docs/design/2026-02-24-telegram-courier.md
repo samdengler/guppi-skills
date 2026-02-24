@@ -10,13 +10,13 @@ Use Telegram bots as a bidirectional message queue between Claude Desktop and Cl
 
 ```
 ┌─────────────────┐              ┌──────────────┐              ┌──────────────┐
-│ Claude Desktop  │  ──share──▶  │   Telegram   │  ◀──push──  │ Claude Code  │
-│ (phone / mac)   │  ◀─notify─  │   Bot(s)     │  ──pull──▶  │ guppi-courier│
+│ Claude Desktop  │  ──share──▶  │   Telegram   │  ◀──send──  │ Claude Code  │
+│ (phone / mac)   │  ◀─notify─  │   Bot(s)     │  ─receive─▶ │ guppi-courier│
 └─────────────────┘              └──────────────┘              └──────────────┘
 ```
 
-- **pull** — fetch messages sent to the bot (Claude Desktop → Claude Code)
-- **push** — send messages/files via the bot (Claude Code → Claude Desktop)
+- **receive** — fetch messages sent to the bot (Claude Desktop → Claude Code)
+- **send** — send messages/files via the bot (Claude Code → Claude Desktop)
 
 ## Design
 
@@ -64,7 +64,7 @@ Per-bot state lives in `~/.local/state/guppi/courier/`:
 ```
 
 - **Offsets** — Telegram `getUpdates` offset, one plain integer per bot. Tracks which messages have been consumed.
-- **Chat IDs** — learned from the first `getUpdates` response. Required for `push` (sending messages back). One integer per bot.
+- **Chat IDs** — learned from the first `getUpdates` response. Required for `send` (sending messages back). One integer per bot.
 
 One file per bot per concern. No JSON, just plain integers. Avoids read-modify-write collisions if multiple bots are used concurrently.
 
@@ -104,15 +104,37 @@ POST https://api.telegram.org/bot<token>/sendDocument
 
 Python stdlib `urllib.request` handles all HTTP — no `requests` or `httpx` needed.
 
+### Inbox (data)
+
+Pulled messages land in a per-bot, date-organized inbox under `~/.local/share/guppi/courier/inbox/`:
+
+```
+~/.local/share/guppi/courier/inbox/handoffs/
+  2026-02-24/
+    091500.md          # text message at 09:15:00
+    091532.md          # another text at 09:15:32
+    budget.xlsx        # document (original filename)
+    budget (1).xlsx    # collision gets macOS-style suffix
+    photo.jpg          # photo
+  2026-02-25/
+    ...
+```
+
+- Text messages → `<HHMMSS>.md` (timestamp from Telegram)
+- Documents/photos → original filename
+- Collisions → `(1)`, `(2)`, etc.
+- `--output` overrides the inbox for ad-hoc receives
+- Other skills discover the inbox path via `guppi-courier inbox <bot>`
+
 ### What gets shared
 
 **Pulling (inbound):**
 
 | Type | What courier does |
 |------|-------------------|
-| **Text** | Print to stdout (Claude Code reads it as a spec/prompt) |
-| **Document** | Download to `--output` dir (default: current directory) |
-| **Photo** | Download highest-res version to `--output` dir |
+| **Text** | Print to stdout AND save as `<HHMMSS>.md` in inbox |
+| **Document** | Download to inbox (original filename) |
+| **Photo** | Download highest-res version to inbox |
 | **URL in text** | Fetch the URL content and print to stdout |
 
 **Pushing (outbound):**
@@ -125,29 +147,29 @@ Python stdlib `urllib.request` handles all HTTP — no `requests` or `httpx` nee
 
 ## Commands
 
-### `guppi-courier pull [--bot NAME] [--output DIR] [--keep]`
+### `guppi-courier receive [--bot NAME] [--output DIR] [--keep]`
 
 Fetch the latest message(s) from a bot.
 
 - `--bot` / `-b` — bot name from registry (default: the `default` bot)
 - `--output` / `-o` — directory for downloaded files (default: `.`)
-- `--keep` — don't acknowledge messages (they'll appear again on next pull)
+- `--keep` — don't acknowledge messages (they'll appear again on next receive)
 - Prints text content to stdout, downloads files to output dir
-- By default, acknowledges messages after successful pull (updates offset)
-- Learns and persists `chat_id` from the response (enables `push`)
+- By default, acknowledges messages after successful receive (updates offset)
+- Learns and persists `chat_id` from the response (enables `send`)
 
 ```bash
 # Pull latest from default bot
-guppi-courier pull
+guppi-courier receive
 
 # Pull from a specific bot
-guppi-courier pull --bot openclaw
+guppi-courier receive --bot openclaw
 
 # Download files to a specific directory
-guppi-courier pull --output ./handoffs/
+guppi-courier receive --output ./handoffs/
 ```
 
-### `guppi-courier push [MESSAGE] [--bot NAME] [--file PATH]`
+### `guppi-courier send [MESSAGE] [--bot NAME] [--file PATH]`
 
 Send a message or file via the bot.
 
@@ -158,18 +180,36 @@ Send a message or file via the bot.
 
 ```bash
 # Send text
-guppi-courier push "Build complete — 3 tests passing"
+guppi-courier send "Build complete — 3 tests passing"
 
 # Pipe content
-cat results.json | guppi-courier push --bot handoffs
+cat results.json | guppi-courier send --bot handoffs
 
 # Send a file
-guppi-courier push --file ./report.pdf
+guppi-courier send --file ./report.pdf
+```
+
+### `guppi-courier inbox [BOT] [--today]`
+
+Print the inbox path for a bot. Other skills use this to discover where messages land.
+
+- `BOT` — bot name (default: the `default` bot)
+- `--today` — append today's date subdirectory
+
+```bash
+$ guppi-courier inbox handoffs
+/Users/sam/.local/share/guppi/courier/inbox/handoffs
+
+$ guppi-courier inbox handoffs --today
+/Users/sam/.local/share/guppi/courier/inbox/handoffs/2026-02-24
+
+# Other skills use it to discover the inbox:
+inbox=$(guppi-courier inbox handoffs --today)
 ```
 
 ### `guppi-courier peek [--bot NAME]`
 
-Show what's waiting without acknowledging. Preview of what `pull` would fetch.
+Show what's waiting without acknowledging. Preview of what `receive` would fetch.
 
 ### `guppi-courier bots`
 
@@ -217,9 +257,10 @@ Remove a bot from the registry and delete its token from locker.
 ## File layout
 
 ```
-~/.config/guppi/courier/config.json           # Bot registry (settings)
-~/.local/state/guppi/courier/offsets/<bot>     # Update offset per bot (plain integer)
-~/.local/state/guppi/courier/chat_ids/<bot>    # Chat ID per bot (plain integer)
+~/.config/guppi/courier/config.json                    # Bot registry (settings)
+~/.local/share/guppi/courier/inbox/<bot>/<date>/       # Inbox (received messages/files)
+~/.local/state/guppi/courier/offsets/<bot>              # Update offset per bot (plain integer)
+~/.local/state/guppi/courier/chat_ids/<bot>             # Chat ID per bot (plain integer)
 ```
 
 Tokens live in locker, not on the filesystem.
@@ -233,4 +274,4 @@ Tokens live in locker, not on the filesystem.
 ## Open questions
 
 1. **Artifact URL fetching** — Claude Desktop artifact URLs may require auth or may be ephemeral. Need to test. If they're not fetchable, text content of the message is still useful.
-2. **Slash command** — Should courier also install a `/courier` slash command for Claude Code, or is `guppi-courier pull` sufficient on its own?
+2. **Slash command** — Should courier also install a `/courier` slash command for Claude Code, or is `guppi-courier receive` sufficient on its own?

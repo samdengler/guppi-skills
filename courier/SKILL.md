@@ -11,7 +11,7 @@ license: "MIT"
 
 # Courier — Telegram-based messaging for Claude workflows
 
-Bidirectional message queue between Claude Desktop (phone/Mac) and Claude Code via Telegram bots. Pull specs and files from Claude Desktop, push results back.
+Bidirectional message queue between Claude Desktop (phone/Mac) and Claude Code via Telegram bots. Pull specs and files from Claude Desktop, push results back. Messages land in a per-bot, date-organized inbox that other skills can consume.
 
 ## Setup
 
@@ -21,13 +21,30 @@ guppi-courier add handoffs
 
 ## Commands
 
-### `guppi-courier pull [--bot NAME] [--output DIR] [--keep]`
+### `guppi-courier receive [--bot NAME] [--output DIR] [--keep]`
 
-Fetch the latest messages from a bot.
+Receive the latest messages from a bot. Text is printed to stdout and saved as `.md` files. Documents and photos are downloaded with their original filenames. All files land in the bot's inbox (`~/.local/share/guppi/courier/inbox/<bot>/<date>/`).
 
-### `guppi-courier push [MESSAGE] [--bot NAME] [--file PATH]`
+**Options:**
+- `--bot` / `-b` — bot name (default: the default bot)
+- `--output` / `-o` — override inbox directory for this receive
+- `--keep` — don't acknowledge messages (they'll appear again)
+
+### `guppi-courier send [MESSAGE] [--bot NAME] [--file PATH]`
 
 Send a message or file via the bot.
+
+**Options:**
+- `--bot` / `-b` — bot name (default: the default bot)
+- `--file` / `-f` — send a file as a document
+
+### `guppi-courier inbox [BOT] [--today]`
+
+Print the inbox path for a bot. Other skills use this to discover where messages land.
+
+```bash
+inbox=$(guppi-courier inbox handoffs --today)
+```
 
 ### `guppi-courier peek [--bot NAME]`
 
@@ -39,7 +56,7 @@ List registered bots and their status.
 
 ### `guppi-courier add NAME [--bot-name TELEGRAM_NAME] [--default]`
 
-Register a new bot.
+Register a new bot. Prompts for the token, verifies it, and checks for a chat ID.
 
 ### `guppi-courier remove NAME`
 

@@ -111,3 +111,55 @@ def test_chat_id_round_trip(tmp_path, monkeypatch):
     assert config.get_chat_id("test") is None
     config.set_chat_id("test", 12345)
     assert config.get_chat_id("test") == 12345
+
+
+def test_get_inbox_path(tmp_path, monkeypatch):
+    """Inbox path without today flag."""
+    monkeypatch.setattr(config, "INBOX_DIR", tmp_path / "inbox")
+    path = config.get_inbox_path("handoffs")
+    assert path == tmp_path / "inbox" / "handoffs"
+
+
+def test_get_inbox_path_today(tmp_path, monkeypatch):
+    """Inbox path with today flag includes date."""
+    from datetime import date
+
+    monkeypatch.setattr(config, "INBOX_DIR", tmp_path / "inbox")
+    path = config.get_inbox_path("handoffs", today=True)
+    assert path == tmp_path / "inbox" / "handoffs" / date.today().isoformat()
+
+
+def test_get_inbox_today_creates_dir(tmp_path, monkeypatch):
+    """get_inbox_today creates the directory."""
+    monkeypatch.setattr(config, "INBOX_DIR", tmp_path / "inbox")
+    path = config.get_inbox_today("handoffs")
+    assert path.is_dir()
+
+
+def test_deduplicate_path_no_collision(tmp_path):
+    """No collision returns original path."""
+    dest = tmp_path / "message.md"
+    assert config.deduplicate_path(dest) == dest
+
+
+def test_deduplicate_path_one_collision(tmp_path):
+    """One existing file gets (1) suffix."""
+    (tmp_path / "message.md").write_text("first")
+    dest = config.deduplicate_path(tmp_path / "message.md")
+    assert dest == tmp_path / "message (1).md"
+
+
+def test_deduplicate_path_multiple_collisions(tmp_path):
+    """Multiple collisions increment correctly."""
+    (tmp_path / "report.xlsx").write_text("first")
+    (tmp_path / "report (1).xlsx").write_text("second")
+    (tmp_path / "report (2).xlsx").write_text("third")
+    dest = config.deduplicate_path(tmp_path / "report.xlsx")
+    assert dest == tmp_path / "report (3).xlsx"
+
+
+def test_deduplicate_path_no_extension(tmp_path):
+    """Works with files that have no extension."""
+    (tmp_path / "README").write_text("first")
+    dest = config.deduplicate_path(tmp_path / "README")
+    assert dest == tmp_path / "README (1)"

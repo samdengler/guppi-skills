@@ -2,10 +2,13 @@
 
 import json
 import subprocess
+from datetime import date
 from pathlib import Path
 
 CONFIG_DIR = Path.home() / ".config" / "guppi" / "courier"
 CONFIG_FILE = CONFIG_DIR / "config.json"
+DATA_DIR = Path.home() / ".local" / "share" / "guppi" / "courier"
+INBOX_DIR = DATA_DIR / "inbox"
 STATE_DIR = Path.home() / ".local" / "state" / "guppi" / "courier"
 OFFSETS_DIR = STATE_DIR / "offsets"
 CHAT_IDS_DIR = STATE_DIR / "chat_ids"
@@ -151,3 +154,39 @@ def set_chat_id(name: str, chat_id: int) -> None:
     """Write the chat ID for a bot."""
     CHAT_IDS_DIR.mkdir(parents=True, exist_ok=True)
     (CHAT_IDS_DIR / name).write_text(str(chat_id))
+
+
+# --- Inbox ---
+
+
+def get_inbox_path(name: str, today: bool = False) -> Path:
+    """Get the inbox directory for a bot.
+
+    If today=True, returns the dated subdirectory for today.
+    """
+    path = INBOX_DIR / name
+    if today:
+        path = path / date.today().isoformat()
+    return path
+
+
+def get_inbox_today(name: str) -> Path:
+    """Get (and create) today's inbox directory for a bot."""
+    path = get_inbox_path(name, today=True)
+    path.mkdir(parents=True, exist_ok=True)
+    return path
+
+
+def deduplicate_path(dest: Path) -> Path:
+    """Return dest if it doesn't exist, otherwise add (1), (2), etc."""
+    if not dest.exists():
+        return dest
+    stem = dest.stem
+    suffix = dest.suffix
+    parent = dest.parent
+    n = 1
+    while True:
+        candidate = parent / f"{stem} ({n}){suffix}"
+        if not candidate.exists():
+            return candidate
+        n += 1

@@ -10,8 +10,8 @@ from cryptography.fernet import Fernet, InvalidToken
 
 KEYCHAIN_SERVICE = "guppi/locker"
 KEYCHAIN_ACCOUNT = "master-key"
-CONFIG_DIR = Path.home() / ".config" / "guppi" / "locker"
-SECRETS_FILE = CONFIG_DIR / "secrets.enc"
+DATA_DIR = Path.home() / ".local" / "share" / "guppi" / "locker"
+SECRETS_FILE = DATA_DIR / "secrets.enc"
 
 
 class SecretExistsError(Exception):
@@ -111,7 +111,7 @@ def initialize(force: bool = False) -> None:
     if is_initialized() and not force:
         return
 
-    CONFIG_DIR.mkdir(parents=True, exist_ok=True)
+    DATA_DIR.mkdir(parents=True, exist_ok=True)
 
     # Generate and store master key
     master_key = Fernet.generate_key()

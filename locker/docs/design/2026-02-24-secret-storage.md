@@ -19,14 +19,14 @@ OS Keychain (macOS security / Linux secret-tool)
     └── one master key: guppi/locker → master-key
             │
             ▼
-~/.config/guppi/locker/secrets.enc   (Fernet-encrypted JSON)
+~/.local/share/guppi/locker/secrets.enc   (Fernet-encrypted JSON)
     ├── courier/handoffs = "token-value"
     ├── courier/openclaw = "other-value"
     └── snapper/api-key  = "abc123"
 ```
 
 - **Master key**: A single Fernet key stored in the OS keychain via `security` CLI (macOS). Only one keychain interaction per operation.
-- **Secrets file**: Fernet-encrypted JSON blob at `~/.config/guppi/locker/secrets.enc`. All secrets in one file, decrypted in memory, never written to disk in plaintext.
+- **Secrets file**: Fernet-encrypted JSON blob at `~/.local/share/guppi/locker/secrets.enc`. All secrets in one file, decrypted in memory, never written to disk in plaintext.
 - **Fernet**: AES-128-CBC + HMAC-SHA256 via the `cryptography` library. Authenticated encryption — tamper-evident.
 
 ### Keychain entry
@@ -70,7 +70,7 @@ One-time setup. Generates a Fernet master key, stores it in the OS keychain, cre
 $ guppi-locker init
 Generating master key... done.
 Storing in keychain... done.
-Created ~/.config/guppi/locker/secrets.enc
+Created ~/.local/share/guppi/locker/secrets.enc
 ```
 
 Re-running `init` is a no-op if already initialized. Use `--force` to regenerate (destroys all existing secrets).

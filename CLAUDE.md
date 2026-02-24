@@ -104,7 +104,12 @@ Skill names should be **pithy, short "-er" verbs** that describe what the skill 
 | CLI command | `guppi-<name>` | `guppi-spiker` |
 | Typer app var | `app` | `app = typer.Typer(...)` |
 | `[tool.guppi] name` | `<name>` | `spiker` |
-| Config directory | `~/.config/guppi/<name>/` | `~/.config/guppi/locker/` |
+| Config | `~/.config/guppi/<name>/` | Settings, preferences |
+| Data | `~/.local/share/guppi/<name>/` | Important, portable user data |
+| State | `~/.local/state/guppi/<name>/` | Cursors, offsets, history |
+| Cache | `~/.cache/guppi/<name>/` | Non-essential, regenerable |
+
+Skills use [XDG Base Directory](https://specifications.freedesktop.org/basedir/latest/) conventions. Config files use JSON (`config.json`). Not every skill needs all four directories — only create what you use.
 
 ### pyproject.toml Template
 

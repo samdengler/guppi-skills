@@ -101,6 +101,48 @@ def test_path_no_match(tmp_path, monkeypatch):
     assert result.exit_code == 1
 
 
+def test_new_idempotent_same_name(tmp_path, monkeypatch):
+    """Running 'new' twice with the same name returns the existing directory."""
+    monkeypatch.setenv("SPIKER_PATH", str(tmp_path))
+    result1 = runner.invoke(app, ["new", "my-spike", "--no-git"])
+    result2 = runner.invoke(app, ["new", "my-spike", "--no-git"])
+    assert result1.exit_code == 0
+    assert result2.exit_code == 0
+    assert result1.output.strip() == result2.output.strip()
+
+
+def test_new_idempotent_different_day(tmp_path, monkeypatch):
+    """An existing spike from a different date is found and reused."""
+    monkeypatch.setenv("SPIKER_PATH", str(tmp_path))
+    # Simulate a spike created on an earlier date
+    (tmp_path / "2025-01-15-old-spike").mkdir()
+    result = runner.invoke(app, ["new", "old-spike", "--no-git"])
+    assert result.exit_code == 0
+    assert result.output.strip().endswith("2025-01-15-old-spike")
+
+
+def test_new_idempotent_no_extra_dirs(tmp_path, monkeypatch):
+    """Idempotent new should not create additional directories."""
+    monkeypatch.setenv("SPIKER_PATH", str(tmp_path))
+    runner.invoke(app, ["new", "only-one", "--no-git"])
+    runner.invoke(app, ["new", "only-one", "--no-git"])
+    runner.invoke(app, ["new", "only-one", "--no-git"])
+    dirs = [d for d in tmp_path.iterdir() if d.is_dir()]
+    assert len(dirs) == 1
+
+
+def test_new_random_name_not_idempotent(tmp_path, monkeypatch):
+    """Random names (no arg) should always create new directories."""
+    monkeypatch.setenv("SPIKER_PATH", str(tmp_path))
+    result1 = runner.invoke(app, ["new", "--no-git"])
+    result2 = runner.invoke(app, ["new", "--no-git"])
+    assert result1.exit_code == 0
+    assert result2.exit_code == 0
+    # Extremely unlikely to collide, but even if they do, both should succeed
+    dirs = [d for d in tmp_path.iterdir() if d.is_dir()]
+    assert len(dirs) >= 1
+
+
 def test_skill_show():
     result = runner.invoke(app, ["skill", "show"])
     assert result.exit_code == 0

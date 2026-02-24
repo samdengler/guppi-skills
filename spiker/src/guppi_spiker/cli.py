@@ -2,6 +2,7 @@
 
 import os
 import random
+import re
 import subprocess
 from datetime import date
 from pathlib import Path
@@ -52,13 +53,39 @@ def _list_spikes(root: Path) -> list[tuple[str, str, Path]]:
 # --- Domain commands ---
 
 
+def _find_existing(slug: str, root: Path) -> Path | None:
+    """Find an existing spike directory with the given slug, regardless of date prefix."""
+    if not root.is_dir():
+        return None
+    pattern = re.compile(rf"^\d{{4}}-\d{{2}}-\d{{2}}-{re.escape(slug)}$")
+    matches = sorted(
+        (d for d in root.iterdir() if d.is_dir() and pattern.match(d.name)),
+        key=lambda d: d.name,
+    )
+    return matches[-1] if matches else None
+
+
 @app.command()
 def new(
     name: Annotated[str | None, typer.Argument(help="Slug for the spike directory (random if omitted)")] = None,
     git: Annotated[bool, typer.Option(help="Initialize a git repo")] = True,
 ):
-    """Create a new spike directory."""
+    """Create a new spike directory (idempotent when name is provided).
+
+    If a spike with the given name already exists, prints its path without
+    creating a new directory. Designed for use with:
+
+        cd $(guppi-spiker new my-experiment)
+    """
     root = _get_spiker_root()
+
+    # When a name is given, check for existing spike first (idempotent)
+    if name:
+        existing = _find_existing(name, root)
+        if existing:
+            typer.echo(str(existing))
+            return
+
     root.mkdir(parents=True, exist_ok=True)
 
     slug = name if name else _generate_name()

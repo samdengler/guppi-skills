@@ -4,6 +4,12 @@ Personal collection of CLI tools that double as AI agent skills. Each skill is a
 
 Skills work from the terminal for humans and from agents (Claude Code, Copilot, etc.) via SKILL.md instructions.
 
+## Design Philosophy
+
+Every skill is a real CLI first. There are no agent-only APIs or hidden interfaces — if an agent can do it, you can do it from your terminal. The SKILL.md manifest just teaches agents which commands exist and when to use them.
+
+This means skills are testable, composable, and useful even without an AI agent. The agent is a caller, not a requirement.
+
 ## Skills
 
 | Skill | Version | Description |

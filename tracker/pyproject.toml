@@ -1,0 +1,25 @@
+[project]
+name = "guppi-tracker"
+version = "0.1.0"
+description = "Cross-project task and idea tracker built on beads"
+requires-python = ">=3.11"
+dependencies = [
+    "typer>=0.9.0",
+]
+
+[project.scripts]
+guppi-tracker = "guppi_tracker.cli:app"
+
+[tool.guppi]
+name = "tracker"
+description = "Cross-project task and idea tracker built on beads"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/guppi_tracker"]
+
+[tool.hatch.build.targets.wheel.force-include]
+"SKILL.md" = "guppi_tracker/SKILL.md"

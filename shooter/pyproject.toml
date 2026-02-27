@@ -1,0 +1,25 @@
+[project]
+name = "guppi-shooter"
+version = "0.1.0"
+description = "Screenshot manager — set preferences and manage screen captures"
+requires-python = ">=3.11"
+dependencies = [
+    "typer>=0.9.0",
+]
+
+[project.scripts]
+guppi-shooter = "guppi_shooter.cli:app"
+
+[tool.guppi]
+name = "shooter"
+description = "Screenshot manager — set preferences and manage screen captures"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/guppi_shooter"]
+
+[tool.hatch.build.targets.wheel.force-include]
+"SKILL.md" = "guppi_shooter/SKILL.md"

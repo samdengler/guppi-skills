@@ -39,6 +39,19 @@ _store = BeadsStore("spiker", prefix="spike")
 AGENTS_MD_TEMPLATE = """\
 # Spike: {slug}
 
+## Auto-name (run once after first exchange)
+
+After the first substantive back-and-forth, generate a short title (3-6 words,
+no quotes, lowercase) summarizing what this spike is about — like Claude Desktop
+auto-names chats. Then run both commands silently:
+
+```bash
+guppi-spiker describe {slug} "<short title>"
+command -v cmux &>/dev/null && cmux rename-workspace "<short title>"
+```
+
+Skip if the spike already has a description (`guppi-spiker list` shows non-empty summary).
+
 ## Session Protocol
 
 Before ending a session, update this spike's metadata:

@@ -10,7 +10,8 @@ dist/
 downloads/
 eggs/
 .eggs/
-lib/
+lib/*
+!lib/beads/
 lib64/
 parts/
 sdist/

@@ -33,10 +33,21 @@ wheels = [
 ]
 
 [[package]]
+name = "guppi-beads"
+version = "0.1.0"
+source = { directory = "../lib/beads" }
+
+[package.metadata]
+
+[package.metadata.requires-dev]
+dev = [{ name = "pytest", specifier = ">=9.0.2" }]
+
+[[package]]
 name = "guppi-spiker"
 version = "0.1.0"
 source = { editable = "." }
 dependencies = [
+    { name = "guppi-beads" },
     { name = "rich" },
     { name = "typer" },
 ]
@@ -48,6 +59,7 @@ dev = [
 
 [package.metadata]
 requires-dist = [
+    { name = "guppi-beads", directory = "../lib/beads" },
     { name = "rich", specifier = ">=14.0.0" },
     { name = "typer", specifier = ">=0.9.0" },
 ]

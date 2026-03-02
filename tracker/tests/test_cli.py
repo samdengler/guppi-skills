@@ -224,6 +224,70 @@ def test_search_no_match():
         assert "No items matching" in result.output
 
 
+# --- review ---
+
+
+def test_review_inbox_zero():
+    with _mock_store():
+        result = runner.invoke(app, ["review"])
+        assert result.exit_code == 0
+        assert "Inbox zero" in result.output
+
+
+def test_review_tag_item():
+    issues = [{"id": "trk-abc", "title": "Build chrome extension", "labels": [], "status": "open"}]
+    with _mock_store(issues) as run_calls:
+        result = runner.invoke(app, ["review"], input="t\nidea\n")
+        assert result.exit_code == 0
+        assert "Build chrome extension" in result.output
+        assert "Tagged: idea" in result.output
+        update_calls = [c for c in run_calls if c[0] == "update"]
+        assert len(update_calls) == 1
+        assert "--add-label" in update_calls[0]
+        assert "idea" in update_calls[0]
+
+
+def test_review_done_item():
+    issues = [{"id": "trk-abc", "title": "Old task", "labels": [], "status": "open"}]
+    with _mock_store(issues) as run_calls:
+        result = runner.invoke(app, ["review"], input="d\n")
+        assert result.exit_code == 0
+        assert "Done" in result.output
+        close_calls = [c for c in run_calls if c[0] == "close"]
+        assert len(close_calls) == 1
+        assert "trk-abc" in close_calls[0]
+
+
+def test_review_skip_item():
+    issues = [{"id": "trk-abc", "title": "Maybe later", "labels": [], "status": "open"}]
+    with _mock_store(issues):
+        result = runner.invoke(app, ["review"], input="s\n")
+        assert result.exit_code == 0
+        assert "Skipped" in result.output
+        assert "Review complete" in result.output
+
+
+def test_review_quit():
+    issues = [
+        {"id": "trk-abc", "title": "First item", "labels": [], "status": "open"},
+        {"id": "trk-def", "title": "Second item", "labels": [], "status": "open"},
+    ]
+    with _mock_store(issues):
+        result = runner.invoke(app, ["review"], input="q\n")
+        assert result.exit_code == 0
+        assert "Stopped" in result.output
+        assert "Second item" not in result.output
+
+
+def test_review_multiple_tags():
+    issues = [{"id": "trk-abc", "title": "An article", "labels": [], "status": "open"}]
+    with _mock_store(issues) as run_calls:
+        result = runner.invoke(app, ["review"], input="t\ntoread backend\n")
+        assert result.exit_code == 0
+        update_calls = [c for c in run_calls if c[0] == "update"]
+        assert len(update_calls) == 2
+
+
 # --- skill ---
 
 

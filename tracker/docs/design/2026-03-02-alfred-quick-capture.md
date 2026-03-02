@@ -1,7 +1,7 @@
 # Alfred Quick Capture for Tracker
 
 **Date:** 2026-03-02
-**Status:** Idea
+**Status:** Implemented (v1 — `.q` inbox only)
 
 ## Motivation
 
@@ -10,67 +10,74 @@ The best capture tool is the one with the least friction. Right now, adding an i
 Alfred is already the fastest way to invoke anything on macOS. A keyword + text is all it should take:
 
 ```
-⌘Space → .i build a chrome extension with plasmo → Enter
+⌘Space → .q build a chrome extension with plasmo → Enter
 ```
 
-Done. Idea tracked. Back to what you were doing in under 2 seconds.
+Done. Captured to inbox. Back to what you were doing in under 2 seconds. Process later with `guppi-tracker review`.
 
-## Design
+## Design (v1 — GTD Inbox)
 
-### Keywords → Tags
+### Single keyword: `.q`
 
-Each keyword maps to a `guppi-tracker add` call with pre-defined tags:
+Start with one keyword that captures everything untagged to the inbox:
+
+```
+.q build a chrome extension with plasmo
+```
+
+This follows GTD: capture fast, categorize later. The `review` command walks through untagged items and lets you tag, done, or skip each one.
+
+### Implementation
+
+An Alfred workflow with one Keyword → Run Script → Post Notification:
+
+```bash
+/Users/samdengler/.local/bin/guppi-tracker add "{query}"
+```
+
+No `--tag` flag. Items land in the inbox untagged. Alfred shows a "Tracked" notification on success.
+
+### Workflow Structure
+
+```
+tracker/alfred/
+├── info.plist              # Alfred workflow definition
+└── install.sh              # Build .alfredworkflow and import
+```
+
+Run `./install.sh` to build and open the workflow in Alfred.
+
+### Review Flow
+
+```bash
+guppi-tracker review        # Walk through untagged items
+```
+
+For each item: **(t)ag**, **(d)one**, **(s)kip**, or **(q)uit**.
+
+## What I Like
+
+- **Zero friction** — one keyword, no categorization needed at capture time
+- **GTD inbox** — capture everything, process later in batch
+- **No new infrastructure** — tracker does all the work, Alfred is just a launcher
+- **Works offline** — no network, no API, just a local CLI call
+
+## Future: Multiple Keywords
+
+If the single `.q` keyword feels limiting, add per-tag shortcuts later:
 
 | Keyword | Tag | Example |
 |---------|-----|---------|
+| `.q` | *(none)* | `.q build a chrome extension with plasmo` |
 | `.i` | `idea` | `.i build a chrome extension with plasmo` |
 | `.t` | `task` | `.t update snapper CDP version` |
 | `.r` | `toread` | `.r https://architecture-notes.com/cell-arch` |
 | `.b` | `buy` | `.b replacement AirPods tips` |
 | `.f` | `followup` | `.f check if PR was merged` |
 
-The dot prefix keeps them short and avoids colliding with other Alfred keywords. Single character after the dot for muscle memory.
+Each is a copy of the `.q` workflow with `--tag <name>` appended to the script.
 
-### Implementation
+## Open Questions (Deferred)
 
-An Alfred workflow with one Script Filter per keyword. Each runs:
-
-```bash
-/Users/samdengler/.local/bin/guppi-tracker add "{query}" --tag idea
-```
-
-The workflow is just a thin launcher — all logic stays in tracker. No Alfred-specific state or configuration.
-
-### Notification
-
-Alfred can show a brief notification on success ("Tracked: build a chrome extension with plasmo"). On failure (bd not installed, etc.), show the error. This is built into Alfred's Post Notification output.
-
-### Workflow Structure
-
-```
-tracker-capture.alfredworkflow
-├── Keyword: .i → Run Script → Post Notification
-├── Keyword: .t → Run Script → Post Notification
-├── Keyword: .r → Run Script → Post Notification
-├── Keyword: .b → Run Script → Post Notification
-└── Keyword: .f → Run Script → Post Notification
-```
-
-Each is identical except for the keyword and `--tag` value. Could also be a single Universal Action with a tag picker, but separate keywords are faster — no second step.
-
-## What I Like
-
-- **Zero friction** — Alfred is already muscle memory, adding a keyword is trivial
-- **No new infrastructure** — tracker does all the work, Alfred is just a launcher
-- **Extensible** — new keywords are a 30-second copy-paste in Alfred
-- **Works offline** — no network, no API, just a local CLI call
-
-## Open Questions
-
-- **Where does the workflow live?** Options:
-  - In `tracker/alfred/` and manually import into Alfred
-  - Managed by a future "futzer" workflow (generate Alfred workflows from config)
-  - Just build it by hand in Alfred and don't version-control it
-- **Should `.r` extract a title from the URL?** Could add a `--url` flag to tracker that fetches the page title automatically. Nice but adds complexity and network dependency.
-- **Multiple tags on capture?** Probably not worth it — keep capture fast, tag later with `guppi-tracker tag`.
-- **Should there be a `.q` (quick, no tag)?** For things that don't fit a category. Could just be `.t` with a generic `inbox` tag.
+- **Should `.r` extract a title from the URL?** Could add a `--url` flag to tracker that fetches the page title. Nice but adds complexity.
+- **Where does the workflow live long-term?** Currently in `tracker/alfred/`, imported manually. Could be managed by futzer in the future.

@@ -178,6 +178,59 @@ def search(
     typer.echo(output)
 
 
+@app.command()
+def review():
+    """Process inbox — walk through untagged items and tag, done, or skip them."""
+    _require_beads()
+
+    args = ["list", "--json", "--no-labels"]
+    result = _store.run(args)
+    if result.returncode != 0:
+        typer.echo(f"Error: {result.stderr.strip()}", err=True)
+        raise typer.Exit(1)
+
+    try:
+        issues = json.loads(result.stdout)
+    except (json.JSONDecodeError, ValueError):
+        issues = []
+
+    if not issues:
+        console.print("[green]Inbox zero![/green] Nothing to review.")
+        raise typer.Exit()
+
+    console.print(f"\n[bold]{len(issues)} item(s) to review[/bold]\n")
+
+    for i, issue in enumerate(issues, 1):
+        issue_id = issue.get("id", "")
+        title = issue.get("title", "")
+
+        console.print(f"[bold][{i}/{len(issues)}][/bold] {title}")
+        console.print(f"  [dim]{issue_id}[/dim]")
+
+        action = typer.prompt(
+            "  (t)ag, (d)one, (s)kip, (q)uit",
+            default="s",
+        )
+
+        if action.lower().startswith("t"):
+            tags_input = typer.prompt("  Tags (space-separated)")
+            for t in tags_input.split():
+                _store.run(["update", issue_id, "--add-label", t])
+            console.print(f"  [green]Tagged: {tags_input}[/green]")
+        elif action.lower().startswith("d"):
+            _store.run(["close", issue_id])
+            console.print(f"  [green]Done[/green]")
+        elif action.lower().startswith("q"):
+            console.print("\nStopped.")
+            raise typer.Exit()
+        else:
+            console.print(f"  [dim]Skipped[/dim]")
+
+        console.print()
+
+    console.print("[green]Review complete![/green]")
+
+
 # --- Skill management subcommand group ---
 
 skill_app = typer.Typer(help="Skill management commands")

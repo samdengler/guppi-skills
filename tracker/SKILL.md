@@ -75,6 +75,20 @@ Full-text search across titles and descriptions.
 guppi-tracker search "Chrome extension"
 ```
 
+### `guppi-tracker review`
+
+Process inbox — walk through untagged items and tag, done, or skip them.
+
+For each untagged item, you'll be prompted to:
+- **(t)ag** — assign tags (space-separated)
+- **(d)one** — mark complete
+- **(s)kip** — leave for later (default)
+- **(q)uit** — stop reviewing
+
+```bash
+guppi-tracker review
+```
+
 ## Tag Conventions
 
 | Tag | Purpose |

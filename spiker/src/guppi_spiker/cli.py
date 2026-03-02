@@ -14,9 +14,24 @@ from rich.console import Console
 from rich.table import Table
 
 from guppi_beads import BeadsStore
+from guppi_spiker import __version__
 from guppi_spiker.words import ADJECTIVES, ANIMALS, COLORS
 
+
+def _version_callback(value: bool):
+    if value:
+        typer.echo(f"guppi-spiker {__version__}")
+        raise typer.Exit()
+
+
 app = typer.Typer(help="Manage experimental spike projects in a centralized, searchable location")
+
+
+@app.callback()
+def main(
+    version: Annotated[bool, typer.Option("--version", "-V", help="Show version and exit", callback=_version_callback, is_eager=True)] = False,
+):
+    pass
 console = Console()
 
 _store = BeadsStore("spiker", prefix="spike")

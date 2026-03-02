@@ -9,10 +9,23 @@ import typer
 from rich.console import Console
 from rich.table import Table
 
-from guppi_courier import config
-from guppi_courier import telegram
+from guppi_courier import __version__, config, telegram
+
+
+def _version_callback(value: bool):
+    if value:
+        typer.echo(f"guppi-courier {__version__}")
+        raise typer.Exit()
+
 
 app = typer.Typer(help="Telegram-based messaging for Claude workflows")
+
+
+@app.callback()
+def main(
+    version: Annotated[bool, typer.Option("--version", "-V", help="Show version and exit", callback=_version_callback, is_eager=True)] = False,
+):
+    pass
 console = Console()
 err_console = Console(stderr=True)
 

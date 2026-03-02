@@ -191,8 +191,9 @@ guppi-<name> skill show      # Display SKILL.md contents
 ### CLI Pattern (cli.py)
 
 Every skill has a Typer app with:
-1. **Domain commands** — the actual skill functionality
-2. **`skill` subcommand group** — standard install/show commands for agent discovery
+1. **`--version` / `-V` flag** — standard version callback (eager, prints `guppi-<name> X.Y.Z`)
+2. **Domain commands** — the actual skill functionality
+3. **`skill` subcommand group** — standard install/show commands for agent discovery
 
 ```python
 """GUPPI <name> skill CLI"""
@@ -200,7 +201,23 @@ Every skill has a Typer app with:
 import typer
 from typing import Annotated
 
+from guppi_<name> import __version__
+
+
+def _version_callback(value: bool):
+    if value:
+        typer.echo(f"guppi-<name> {__version__}")
+        raise typer.Exit()
+
+
 app = typer.Typer(help="<one-line description>")
+
+
+@app.callback()
+def main(
+    version: Annotated[bool, typer.Option("--version", "-V", help="Show version and exit", callback=_version_callback, is_eager=True)] = False,
+):
+    pass
 
 # --- Domain commands ---
 

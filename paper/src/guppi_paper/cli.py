@@ -6,9 +6,24 @@ from typing import Annotated
 
 import typer
 
+from guppi_paper import __version__
 from guppi_paper.template import hydrate
 
+
+def _version_callback(value: bool):
+    if value:
+        typer.echo(f"guppi-paper {__version__}")
+        raise typer.Exit()
+
+
 app = typer.Typer(help="Analyze academic papers using the Feynman Technique")
+
+
+@app.callback()
+def main(
+    version: Annotated[bool, typer.Option("--version", "-V", help="Show version and exit", callback=_version_callback, is_eager=True)] = False,
+):
+    pass
 
 
 # --- Domain commands ---

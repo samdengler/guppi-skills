@@ -11,11 +11,25 @@ import typer
 from rich.console import Console
 from rich.table import Table
 
-from . import config
+from . import __version__, config
 from .dates import parse_date
 from .sources import ADAPTER_TYPES, HistoryEntry, get_adapter
 
+
+def _version_callback(value: bool):
+    if value:
+        typer.echo(f"guppi-chronicler {__version__}")
+        raise typer.Exit()
+
+
 app = typer.Typer(help="Research historical events from local history sources")
+
+
+@app.callback()
+def main(
+    version: Annotated[bool, typer.Option("--version", "-V", help="Show version and exit", callback=_version_callback, is_eager=True)] = False,
+):
+    pass
 console = Console()
 
 # --- Source management subcommand group ---

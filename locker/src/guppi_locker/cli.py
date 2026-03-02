@@ -6,9 +6,23 @@ from typing import Annotated
 
 import typer
 
-from guppi_locker import vault
+from guppi_locker import __version__, vault
+
+
+def _version_callback(value: bool):
+    if value:
+        typer.echo(f"guppi-locker {__version__}")
+        raise typer.Exit()
+
 
 app = typer.Typer(help="Deterministic secret storage for guppi skills", pretty_exceptions_enable=False)
+
+
+@app.callback()
+def main(
+    version: Annotated[bool, typer.Option("--version", "-V", help="Show version and exit", callback=_version_callback, is_eager=True)] = False,
+):
+    pass
 
 
 def _require_init():

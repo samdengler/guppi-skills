@@ -10,7 +10,23 @@ from typing import Annotated
 import typer
 from rich.console import Console
 
+from guppi_clipper import __version__
+
+
+def _version_callback(value: bool):
+    if value:
+        typer.echo(f"guppi-clipper {__version__}")
+        raise typer.Exit()
+
+
 app = typer.Typer(help="Copy content to the system clipboard without whitespace noise")
+
+
+@app.callback()
+def main(
+    version: Annotated[bool, typer.Option("--version", "-V", help="Show version and exit", callback=_version_callback, is_eager=True)] = False,
+):
+    pass
 console = Console(stderr=True)
 
 

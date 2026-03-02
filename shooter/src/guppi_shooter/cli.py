@@ -6,7 +6,23 @@ from typing import Annotated
 
 import typer
 
+from guppi_shooter import __version__
+
+
+def _version_callback(value: bool):
+    if value:
+        typer.echo(f"guppi-shooter {__version__}")
+        raise typer.Exit()
+
+
 app = typer.Typer(help="Screenshot manager — set preferences and manage screen captures")
+
+
+@app.callback()
+def main(
+    version: Annotated[bool, typer.Option("--version", "-V", help="Show version and exit", callback=_version_callback, is_eager=True)] = False,
+):
+    pass
 
 # --- Domain commands ---
 

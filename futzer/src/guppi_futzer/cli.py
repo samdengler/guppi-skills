@@ -6,6 +6,7 @@ from typing import Annotated
 
 import typer
 
+from guppi_futzer import __version__
 from guppi_futzer.config import (
     CONFIG_DIR,
     CONFIG_FILE,
@@ -14,7 +15,21 @@ from guppi_futzer.config import (
 )
 from guppi_futzer.modules import zsh
 
+
+def _version_callback(value: bool):
+    if value:
+        typer.echo(f"guppi-futzer {__version__}")
+        raise typer.Exit()
+
+
 app = typer.Typer(help="Opinionated config generator you own and understand")
+
+
+@app.callback()
+def main(
+    version: Annotated[bool, typer.Option("--version", "-V", help="Show version and exit", callback=_version_callback, is_eager=True)] = False,
+):
+    pass
 generate_app = typer.Typer(help="Generate config files")
 app.add_typer(generate_app, name="generate")
 

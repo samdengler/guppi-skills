@@ -25,6 +25,7 @@ Prefer the Python standard library over third-party packages. The guppi ecosyste
 - **Subprocesses:** `subprocess.run` (not `os.system`)
 - **Type hints:** `typing.Annotated` for Typer args/options (stdlib, Python 3.9+)
 - **Testing:** pytest + `typer.testing.CliRunner`
+- **Tracking/storage:** `guppi-beads` (`lib/beads/`) for skills that need persistent metadata via beads
 - **Avoid** adding new third-party dependencies unless clearly necessary
 
 ### Issue Tracking

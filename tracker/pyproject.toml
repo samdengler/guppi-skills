@@ -1,11 +1,16 @@
 [project]
 name = "guppi-tracker"
-version = "0.1.0"
+version = "0.2.0"
 description = "Cross-project task and idea tracker built on beads"
 requires-python = ">=3.11"
 dependencies = [
     "typer>=0.9.0",
+    "rich>=14.0.0",
+    "guppi-beads>=0.1.0",
 ]
+
+[tool.uv.sources]
+guppi-beads = { path = "../lib/beads" }
 
 [project.scripts]
 guppi-tracker = "guppi_tracker.cli:app"
@@ -17,6 +22,11 @@ description = "Cross-project task and idea tracker built on beads"
 [build-system]
 requires = ["hatchling"]
 build-backend = "hatchling.build"
+
+[dependency-groups]
+dev = [
+    "pytest>=9.0.2",
+]
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/guppi_tracker"]

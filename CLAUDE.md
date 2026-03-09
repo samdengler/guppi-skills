@@ -72,6 +72,7 @@ Each skill lives in its own top-level directory:
 <name>/
 ├── pyproject.toml          # Package metadata, entry points, build config
 ├── SKILL.md                # Agent Skills manifest (bundled into wheel)
+├── README.md               # User guide (rendered by GitHub in directory views)
 ├── docs/
 │   └── design/             # Feature design docs (iterate before implementing)
 │       └── YYYY-MM-DD-slug.md
@@ -81,6 +82,28 @@ Each skill lives in its own top-level directory:
         ├── cli.py          # Typer app with commands + skill subcommand group
         └── ...             # Additional modules as needed
 ```
+
+### Documentation Convention
+
+Each skill has three layers of documentation, each for a different audience:
+
+| File | Audience | Purpose |
+|------|----------|---------|
+| `README.md` | Human user | What it does, when/how to use it, example sessions |
+| `SKILL.md` | AI agent (Claude) | Instructions the agent follows when the skill is invoked |
+| `docs/design/` | Developer | Architectural decisions, feature planning |
+
+**README.md** is the user guide — written for the person invoking the skill. It should cover:
+- What the skill does (plain language, not agent instructions)
+- When to use it (example invocations)
+- What to expect (what happens step by step, what decisions the user will make)
+- Prerequisites and setup
+- Example session showing a typical interaction
+- CLI command reference (for direct terminal use)
+
+GitHub renders README.md automatically when browsing a directory, so every skill's user guide is visible without extra clicks.
+
+**SKILL.md** is for the agent — it tells Claude *how* to execute the skill. Users shouldn't need to read this to use the skill.
 
 ### Design Docs
 
@@ -193,8 +216,9 @@ guppi-<name> skill show      # Display SKILL.md contents
 
 Every skill has a Typer app with:
 1. **`--version` / `-V` flag** — standard version callback (eager, prints `guppi-<name> X.Y.Z`)
-2. **Domain commands** — the actual skill functionality
-3. **`skill` subcommand group** — standard install/show commands for agent discovery
+2. **`init` command** (optional) — one-time per-machine setup (Claude Code hooks, config files, etc.). Idempotent — safe to run multiple times. Not every skill needs this.
+3. **Domain commands** — the actual skill functionality
+4. **`skill` subcommand group** — standard install/show commands for agent discovery
 
 ```python
 """GUPPI <name> skill CLI"""
@@ -219,6 +243,15 @@ def main(
     version: Annotated[bool, typer.Option("--version", "-V", help="Show version and exit", callback=_version_callback, is_eager=True)] = False,
 ):
     pass
+
+# --- Init (optional — only if skill needs per-machine setup) ---
+
+@app.command()
+def init():
+    """One-time per-machine setup (hooks, config, etc.)."""
+    # Example: register a Claude Code SessionEnd hook
+    # _install_claude_hook()
+    typer.echo("Initialized <name>.")
 
 # --- Domain commands ---
 
@@ -338,13 +371,16 @@ guppi skill install <name> --from ./<name>
 guppi-<name> --help
 guppi-<name> <main-command> <test-args>
 
-# 3. Verify skill management
+# 3. Run init if the skill has one
+guppi-<name> init              # One-time per-machine setup (idempotent)
+
+# 4. Verify skill management
 guppi-<name> skill show        # Should print SKILL.md contents
 
-# 4. Run tests
+# 5. Run tests
 cd <name>/
 uv run pytest
 
-# 5. Clean up (optional)
+# 6. Clean up (optional)
 guppi skill uninstall <name>
 ```

@@ -1,9 +1,11 @@
 """GUPPI spiker skill CLI"""
 
+import json
 import os
 import random
 import re
 import subprocess
+import sys
 from datetime import date
 from pathlib import Path
 
@@ -118,6 +120,75 @@ def _get_or_create_issue(dirname: str) -> dict | None:
             return None
         issue = _store.find_by_title(dirname)
     return issue
+
+
+CLAUDE_SETTINGS_PATH = Path.home() / ".claude" / "settings.json"
+
+HOOK_COMMAND = "guppi-spiker summarize --from-hook"
+
+
+def _read_claude_settings() -> dict:
+    """Read ~/.claude/settings.json, returning empty dict if missing."""
+    if not CLAUDE_SETTINGS_PATH.is_file():
+        return {}
+    try:
+        return json.loads(CLAUDE_SETTINGS_PATH.read_text())
+    except (json.JSONDecodeError, ValueError):
+        return {}
+
+
+def _write_claude_settings(settings: dict) -> None:
+    """Write settings back to ~/.claude/settings.json."""
+    CLAUDE_SETTINGS_PATH.parent.mkdir(parents=True, exist_ok=True)
+    CLAUDE_SETTINGS_PATH.write_text(json.dumps(settings, indent=2) + "\n")
+
+
+def _hook_installed(settings: dict) -> bool:
+    """Check if the spiker SessionEnd hook is already present."""
+    for group in settings.get("hooks", {}).get("SessionEnd", []):
+        for hook in group.get("hooks", []):
+            if hook.get("command") == HOOK_COMMAND:
+                return True
+    return False
+
+
+def _install_hook(settings: dict) -> dict:
+    """Add the spiker SessionEnd hook to settings."""
+    hooks = settings.setdefault("hooks", {})
+    session_end = hooks.setdefault("SessionEnd", [])
+    session_end.append({
+        "matcher": "",
+        "hooks": [
+            {
+                "type": "command",
+                "command": HOOK_COMMAND,
+            }
+        ],
+    })
+    return settings
+
+
+# --- Init ---
+
+
+@app.command()
+def init():
+    """One-time per-machine setup (Claude Code SessionEnd hook for auto-summarize)."""
+    settings = _read_claude_settings()
+    if _hook_installed(settings):
+        typer.echo("SessionEnd hook already installed.")
+    else:
+        settings = _install_hook(settings)
+        _write_claude_settings(settings)
+        typer.echo("Installed SessionEnd hook for auto-summarize.")
+
+    # Ensure beads store is initialized
+    if _store.ensure():
+        typer.echo("Beads store ready.")
+    else:
+        typer.echo("Warning: could not initialize beads store.", err=True)
+
+    typer.echo("Spiker initialized. Spikes will be auto-summarized on session end.")
 
 
 # --- Domain commands ---
@@ -369,6 +440,204 @@ def done(
 
     _store.run(["close", issue["id"]])
     typer.echo(f"Done: {path.name}")
+
+
+@app.command()
+def purge(
+    force: Annotated[bool, typer.Option("--force", "-f", help="Skip confirmation")] = False,
+):
+    """Delete spikes that have no summary (empty/throwaway sessions)."""
+    import shutil
+
+    spikes = _list_spikes(_get_spiker_root())
+    if not spikes:
+        typer.echo("No spikes found.")
+        raise typer.Exit()
+
+    # Build issue lookup
+    issue_map: dict[str, dict] = {}
+    if _store.available() and _store.initialized:
+        for issue in _store.list_issues(all=True):
+            issue_map[issue.get("title", "")] = issue
+
+    # Find spikes without summaries, skipping today's spikes
+    today = date.today().isoformat()
+    to_purge = []
+    for spike_date, slug, path in spikes:
+        if spike_date == today:
+            continue
+        issue = issue_map.get(path.name)
+        summary = issue.get("description", "").strip() if issue else ""
+        if not summary:
+            to_purge.append((spike_date, slug, path, issue))
+
+    if not to_purge:
+        typer.echo("No spikes without summaries to purge.")
+        raise typer.Exit()
+
+    # Show what will be deleted
+    table = Table(show_header=True, header_style="bold")
+    table.add_column("Date", style="dim")
+    table.add_column("Slug")
+    for spike_date, slug, _, _ in to_purge:
+        table.add_row(spike_date, slug)
+    console.print(table)
+    typer.echo(f"\n{len(to_purge)} spike(s) with no summary will be deleted.")
+
+    if not force:
+        confirm = typer.confirm("Proceed?")
+        if not confirm:
+            typer.echo("Aborted.")
+            raise typer.Exit()
+
+    for _, _, path, issue in to_purge:
+        shutil.rmtree(path)
+        if issue:
+            _store.run(["close", issue["id"]])
+        typer.echo(f"Deleted {path.name}")
+
+    typer.echo(f"\nPurged {len(to_purge)} spike(s).")
+
+
+def _resolve_spike_from_cwd(cwd: str) -> tuple[str, str, Path] | None:
+    """Check if cwd is inside a spike directory. Returns (date, slug, path) or None."""
+    cwd_path = Path(cwd)
+    root = _get_spiker_root()
+    # Check if cwd is the spike dir itself or a child of one
+    for check in [cwd_path, *cwd_path.parents]:
+        if check.parent == root:
+            parsed = _parse_spike_dir(check.name)
+            if parsed:
+                return parsed[0], parsed[1], check
+    return None
+
+
+def _extract_transcript_text(transcript_path: str) -> str:
+    """Extract user and assistant text from a Claude Code transcript JSONL."""
+    messages = []
+    with open(transcript_path) as f:
+        for line in f:
+            try:
+                obj = json.loads(line)
+            except json.JSONDecodeError:
+                continue
+            if obj.get("type") not in ("user", "assistant"):
+                continue
+            msg = obj.get("message", {})
+            if not isinstance(msg, dict):
+                continue
+            content = msg.get("content", "")
+            role = msg.get("role", obj["type"])
+            if isinstance(content, str):
+                text = content
+            elif isinstance(content, list):
+                # Extract text blocks only
+                text = " ".join(
+                    block.get("text", "")
+                    for block in content
+                    if isinstance(block, dict) and block.get("type") == "text"
+                )
+            else:
+                continue
+            if text.strip():
+                messages.append(f"{role}: {text.strip()}")
+    # Truncate to roughly last 4000 chars to keep API call small
+    joined = "\n\n".join(messages)
+    if len(joined) > 4000:
+        joined = joined[-4000:]
+    return joined
+
+
+def _generate_summary(transcript_text: str) -> str | None:
+    """Call Claude Haiku via the claude CLI to generate a one-line summary."""
+    try:
+        env = {**os.environ}
+        env.pop("CLAUDECODE", None)  # Allow nested claude CLI calls
+        result = subprocess.run(
+            ["claude", "-p", "--model", "haiku", "--no-session-persistence"],
+            input=(
+                "Your job: write a one-line plain-text summary (max 80 chars) of the "
+                "coding session below. Rules: no markdown, no backticks, no code blocks, "
+                "no quotes, no bullet points. Just one plain sentence describing what "
+                "was explored or built. If the session is too short or unclear, write "
+                '"Brief exploratory session" instead.\n\n'
+                f"{transcript_text}"
+            ),
+            capture_output=True, text=True, timeout=30, env=env,
+        )
+        if result.returncode != 0:
+            return None
+        summary = result.stdout.strip()
+        # Strip any markdown artifacts that slipped through
+        summary = summary.strip("`\"'")
+        summary = re.sub(r"^```\w*\n?", "", summary)
+        summary = re.sub(r"\n?```$", "", summary)
+        summary = summary.strip()
+        # Truncate to 80 chars
+        if len(summary) > 80:
+            summary = summary[:77] + "..."
+        return summary if summary else None
+    except (FileNotFoundError, subprocess.TimeoutExpired):
+        return None
+
+
+@app.command()
+def summarize(
+    from_hook: Annotated[bool, typer.Option("--from-hook", help="Read hook input from stdin (SessionEnd hook mode)")] = False,
+):
+    """Auto-summarize a spike from a Claude Code session transcript.
+
+    Designed to be called by a SessionEnd hook. Reads hook input from stdin,
+    detects if the session was in a spike directory, and generates a summary
+    via Claude Haiku.
+
+    For manual summaries, use 'describe' instead.
+    """
+    if not from_hook:
+        typer.echo("Usage: guppi-spiker summarize --from-hook", err=True)
+        typer.echo("For manual summaries, use: guppi-spiker describe <spike> \"summary\"", err=True)
+        raise typer.Exit(1)
+
+    # Read hook input from stdin
+    try:
+        hook_input = json.loads(sys.stdin.read())
+    except (json.JSONDecodeError, ValueError):
+        raise typer.Exit(0)
+
+    cwd = hook_input.get("cwd", "")
+    transcript_path = hook_input.get("transcript_path", "")
+
+    if not cwd or not transcript_path:
+        raise typer.Exit(0)
+
+    # Check if we're in a spike directory
+    spike = _resolve_spike_from_cwd(cwd)
+    if not spike:
+        raise typer.Exit(0)
+
+    _, _, spike_path = spike
+
+    # Check if spike already has a summary
+    issue = _get_or_create_issue(spike_path.name)
+    if not issue:
+        raise typer.Exit(0)
+    if issue.get("description", "").strip():
+        raise typer.Exit(0)
+
+    # Check transcript exists
+    if not Path(transcript_path).is_file():
+        raise typer.Exit(0)
+
+    # Extract and summarize
+    transcript_text = _extract_transcript_text(transcript_path)
+    if not transcript_text.strip():
+        raise typer.Exit(0)
+
+    summary = _generate_summary(transcript_text)
+    if not summary:
+        raise typer.Exit(0)
+
+    _store.run(["update", issue["id"], "--description", summary])
 
 
 # --- Skill management subcommand group ---

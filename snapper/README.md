@@ -122,4 +122,4 @@ Extensions placed in the `extensions/` data directory (each in a subdirectory wi
 - Python 3.11+
 - [Playwright](https://playwright.dev/) (installed as a dependency)
 - [ImageMagick](https://imagemagick.org/) (only needed for `--resize`)
-- [guppi-cli](https://github.com/agent-skills/guppi-cli) (for `guppi skill install`)
+- [guppi-cli](https://github.com/agent-skills/guppi-cli) (for `guppi skills install`)

@@ -76,6 +76,6 @@ The PDF is written alongside the markdown file with the same name and a `.pdf` e
 ## Prerequisites
 
 - Python 3.11+
-- [guppi-cli](https://github.com/agent-skills/guppi-cli) (for `guppi skill install`)
+- [guppi-cli](https://github.com/agent-skills/guppi-cli) (for `guppi skills install`)
 - `pandoc` and `basictex` for PDF conversion (`brew install pandoc basictex`)
 - `pdftotext` for extracting text from PDF papers (part of `poppler`: `brew install poppler`)

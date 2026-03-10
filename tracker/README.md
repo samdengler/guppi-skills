@@ -120,5 +120,5 @@ Tracker has no configuration files. It stores all data in the beads store, which
 ## Prerequisites
 
 - Python 3.11+
-- [guppi-cli](https://github.com/agent-skills/guppi-cli) (for `guppi skill install`)
+- [guppi-cli](https://github.com/agent-skills/guppi-cli) (for `guppi skills install`)
 - [guppi-beads](../lib/beads/) (for persistent storage)

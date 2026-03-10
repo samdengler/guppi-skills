@@ -4,7 +4,7 @@ description: >
   Screenshot manager for macOS. Use when you need to view or change screenshot
   preferences like save location, format, or naming.
 allowed-tools: "Bash(guppi-shooter:*)"
-version: "0.1.0"
+version: "0.1.1"
 author: "Sam Dengler"
 license: "MIT"
 ---

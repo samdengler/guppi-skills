@@ -4,7 +4,7 @@ description: >
   Opinionated config generator you own and understand.
   Use when you need to generate, apply, or manage configuration across machines.
 allowed-tools: "Bash(guppi-futzer:*)"
-version: "0.1.0"
+version: "0.1.1"
 author: "Sam Dengler"
 license: "MIT"
 ---

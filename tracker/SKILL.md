@@ -4,7 +4,7 @@ description: >
   Cross-project task and idea tracker built on beads. Use when you need to
   capture ideas, tasks, reading lists, or track async work across projects.
 allowed-tools: "Bash(guppi-tracker:*)"
-version: "0.2.0"
+version: "0.2.1"
 author: "Sam Dengler"
 license: "MIT"
 ---

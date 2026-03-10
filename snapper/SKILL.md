@@ -4,7 +4,7 @@ description: >
   CDP browser screenshots for capturing authenticated web pages.
   Use when you need pixel-perfect PNG screenshots of authenticated sites like Google Sheets, dashboards, or admin panels.
 allowed-tools: "Bash(guppi-snapper:*)"
-version: "0.1.0"
+version: "0.1.1"
 author: "Sam Dengler"
 license: "MIT"
 ---

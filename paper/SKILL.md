@@ -4,7 +4,7 @@ description: >
   Analyze academic papers using the Feynman Technique.
   Use when you need to create a clear, structured explanation of an academic paper.
 allowed-tools: "Bash(guppi-paper:*), Bash(curl:*), Bash(pdftotext:*), WebFetch, Read, Write"
-version: "0.1.0"
+version: "0.1.1"
 author: "Sam Dengler"
 license: "MIT"
 ---

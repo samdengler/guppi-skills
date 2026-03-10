@@ -339,7 +339,7 @@ def install():
     skill_md = _get_skill_md_path()
     skill_dir = skill_md.parent
     result = subprocess.run(
-        ["guppi", "skill", "install", "chronicler", "--from", str(skill_dir), "--yes"],
+        ["guppi", "skills", "install", "chronicler", "--from", str(skill_dir), "--yes"],
         capture_output=True,
         text=True,
     )

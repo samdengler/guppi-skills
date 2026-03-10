@@ -1,6 +1,6 @@
 [project]
 name = "guppi-spiker"
-version = "0.3.0"
+version = "0.3.1"
 description = "Manage experimental spike projects in a centralized, searchable location"
 requires-python = ">=3.11"
 dependencies = [

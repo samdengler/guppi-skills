@@ -130,5 +130,5 @@ Hook-only command called by the SessionEnd hook. Not intended for manual use —
 ## Prerequisites
 
 - Python 3.11+
-- [guppi-cli](https://github.com/agent-skills/guppi-cli) (for `guppi skill install`)
+- [guppi-cli](https://github.com/agent-skills/guppi-cli) (for `guppi skills install`)
 - [guppi-beads](../lib/beads/) (for metadata tracking)

@@ -46,7 +46,7 @@ bd sync --flush-only        # Export to JSONL
 uv sync                     # Install dependencies (from skill directory)
 uv run guppi-<name> --help  # Run skill locally
 uv run pytest               # Run tests
-guppi skill install <name>  # Install skill globally via guppi CLI
+guppi skills install <name> # Install skill globally via guppi CLI
 ```
 
 ### Releasing a Skill
@@ -56,7 +56,7 @@ Each skill is versioned and tagged independently. No repo-wide releases. See `RE
 1. **Bump version** in 3 files: `<name>/pyproject.toml`, `<name>/src/guppi_<name>/__init__.py`, `<name>/SKILL.md`
 2. **Commit**: `git commit -m "Bump <name> to X.Y.Z"`
 3. **Tag**: `git tag -a <name>/vX.Y.Z -m "<name> version X.Y.Z"` — push tag
-4. **Verify**: `guppi skill update <name> && guppi-<name> --help`
+4. **Verify**: `guppi skills update <name> && guppi-<name> --help`
 
 Tag format: `<name>/vX.Y.Z` (e.g., `spiker/v0.2.0`). Prompt for bump type if not specified.
 
@@ -212,12 +212,42 @@ guppi-<name> skill show      # Display SKILL.md contents
 ```
 ```
 
+### JSON Output Convention (`--json`)
+
+Commands that output structured data (tables, lists, status info) **must** support a `--json` flag. This makes skill output machine-readable for agents and scriptable for humans.
+
+**Rules:**
+- Flag: `json_output: Annotated[bool, typer.Option("--json", help="Output as JSON")] = False`
+- Output: `json.dumps(data, indent=2)` via `typer.echo()`, then return early (before table rendering)
+- Data: list of dicts for collections, single dict for status/info commands
+- Default: human-readable table output remains the default (no `--json` = table)
+- Import: `import json` inline (only when `--json` is used)
+
+**Pattern:**
+```python
+@app.command()
+def list_things(
+    json_output: Annotated[bool, typer.Option("--json", help="Output as JSON")] = False,
+):
+    """List things."""
+    items = _get_items()  # build your data as list of dicts
+
+    if json_output:
+        import json
+        typer.echo(json.dumps(items, indent=2))
+        return
+
+    # ... table rendering below ...
+```
+
+**Which commands need `--json`:** any command that renders a table or structured list. Not needed for: single-value lookups (e.g., `locker get`), interactive commands (e.g., `tracker review`), or action commands (e.g., `install`, `init`).
+
 ### CLI Pattern (cli.py)
 
 Every skill has a Typer app with:
 1. **`--version` / `-V` flag** — standard version callback (eager, prints `guppi-<name> X.Y.Z`)
 2. **`init` command** (optional) — one-time per-machine setup (Claude Code hooks, config files, etc.). Idempotent — safe to run multiple times. Not every skill needs this.
-3. **Domain commands** — the actual skill functionality
+3. **Domain commands** — the actual skill functionality (with `--json` on structured output commands)
 4. **`skill` subcommand group** — standard install/show commands for agent discovery
 
 ```python
@@ -276,7 +306,7 @@ def install():
     skill_md = _get_skill_md_path()
     skill_dir = skill_md.parent
     result = subprocess.run(
-        ["guppi", "skill", "install", "<name>", "--from", str(skill_dir), "--yes"],
+        ["guppi", "skills", "install", "<name>", "--from", str(skill_dir), "--yes"],
         capture_output=True, text=True,
     )
     if result.returncode == 0:
@@ -323,9 +353,9 @@ __version__ = "0.1.0"
 
 1. **guppi CLI** (preferred) — install and register in one step:
    ```bash
-   guppi skill install <name>                        # Install from sources
-   guppi skill install <name> --source guppi-skills  # Install from specific source
-   guppi skill install <name> --from ./<name>        # Install from local path
+   guppi skills install <name>                        # Install from sources
+   guppi skills install <name> --source guppi-skills  # Install from specific source
+   guppi skills install <name> --from ./<name>        # Install from local path
    ```
 
 2. **Per-skill command** — register an already-installed skill:
@@ -345,18 +375,18 @@ Use guppi CLI to update sources and skills. Do NOT use `uv tool upgrade` directl
 
 ```bash
 # Update sources (git pull latest from registered repos)
-guppi skill source update                # Update all sources
-guppi skill source update guppi-skills   # Update specific source
+guppi skills source update                # Update all sources
+guppi skills source update guppi-skills   # Update specific source
 
 # Update installed skills (reinstalls from source)
-guppi skill update              # Update all installed guppi-* skills
-guppi skill update <name>       # Update specific skill
+guppi skills update              # Update all installed guppi-* skills
+guppi skills update <name>       # Update specific skill
 ```
 
 **Typical update workflow** after pushing changes to a skill:
 ```bash
-guppi skill source update    # Pull latest source
-guppi skill update <name>    # Reinstall skill from updated source
+guppi skills source update    # Pull latest source
+guppi skills update <name>    # Reinstall skill from updated source
 ```
 
 ### Validating a New Skill
@@ -365,7 +395,7 @@ After creating a skill, verify end-to-end:
 
 ```bash
 # 1. Install via guppi CLI
-guppi skill install <name> --from ./<name>
+guppi skills install <name> --from ./<name>
 
 # 2. Run the CLI
 guppi-<name> --help
@@ -382,5 +412,5 @@ cd <name>/
 uv run pytest
 
 # 6. Clean up (optional)
-guppi skill uninstall <name>
+guppi skills uninstall <name>
 ```

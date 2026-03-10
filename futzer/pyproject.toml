@@ -1,6 +1,6 @@
 [project]
 name = "guppi-futzer"
-version = "0.1.0"
+version = "0.1.1"
 description = "Opinionated config generator you own and understand"
 requires-python = ">=3.11"
 dependencies = [

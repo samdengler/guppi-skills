@@ -31,7 +31,7 @@ This means skills are testable, composable, and useful even without an AI agent.
 Install any skill with [guppi-cli](https://github.com/samdengler/guppi-cli):
 
 ```bash
-guppi skill install <name> --source guppi-skills
+guppi skills install <name> --source guppi-skills
 ```
 
 Or install directly with [uv](https://docs.astral.sh/uv/):

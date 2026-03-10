@@ -108,4 +108,4 @@ Locker uses XDG conventions and the macOS Keychain. There are no environment var
 
 - Python 3.11+
 - macOS (uses the macOS Keychain for master key storage)
-- [guppi-cli](https://github.com/agent-skills/guppi-cli) (for `guppi skill install`)
+- [guppi-cli](https://github.com/agent-skills/guppi-cli) (for `guppi skills install`)

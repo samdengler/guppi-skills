@@ -4,7 +4,7 @@ description: >
   Copy content to the system clipboard without whitespace noise.
   Use when you need to copy generated content (emails, configs, code) to the user's clipboard cleanly.
 allowed-tools: "Bash(guppi-clipper:*)"
-version: "0.1.0"
+version: "0.1.1"
 author: "Sam Dengler"
 license: "MIT"
 ---

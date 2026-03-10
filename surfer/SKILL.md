@@ -4,7 +4,7 @@ description: >
   Chrome browser automation via AppleScript JavaScript execution. Use when you
   need to interact with web pages in Chrome without requiring Chrome MCP.
 allowed-tools: "Bash(guppi-surfer:*)"
-version: "0.1.0"
+version: "0.1.1"
 author: "Sam Dengler"
 license: "MIT"
 ---

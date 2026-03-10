@@ -4,7 +4,7 @@ description: >
   Telegram-based messaging for Claude workflows. Use when you need to
   send or receive messages and files between Claude Desktop and Claude Code.
 allowed-tools: "Bash(guppi-courier:*)"
-version: "0.1.0"
+version: "0.1.1"
 author: "Sam Dengler"
 license: "MIT"
 ---

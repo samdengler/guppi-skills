@@ -110,6 +110,6 @@ The config tracks registered sources, each with:
 ## Prerequisites
 
 - Python 3.11+
-- [guppi-cli](https://github.com/agent-skills/guppi-cli) (for `guppi skill install`)
+- [guppi-cli](https://github.com/agent-skills/guppi-cli) (for `guppi skills install`)
 - **Chrome source:** Full Disk Access permission on macOS (chronicler reads the Chrome History SQLite database)
 - **Terminal source:** Standard shell history file (e.g., `~/.zsh_history`, `~/.bash_history`)

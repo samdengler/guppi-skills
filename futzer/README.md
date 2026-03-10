@@ -117,4 +117,4 @@ terminal = "iterm2"
 ## Prerequisites
 
 - Python 3.11+
-- [guppi-cli](https://github.com/agent-skills/guppi-cli) (for `guppi skill install`)
+- [guppi-cli](https://github.com/agent-skills/guppi-cli) (for `guppi skills install`)

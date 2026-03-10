@@ -23,7 +23,7 @@ Surfer is currently a scaffold. The `run` command exists but is not yet implemen
 
 ```bash
 # Install the skill
-guppi skill install surfer --from ./surfer
+guppi skills install surfer --from ./surfer
 
 # Once implemented, run JavaScript in the active Chrome tab
 guppi-surfer run "document.title"
@@ -54,4 +54,4 @@ Display the SKILL.md contents.
 - macOS (AppleScript is macOS-only)
 - Google Chrome with **Allow JavaScript from Apple Events** enabled (Chrome menu: View > Developer > Allow JavaScript from Apple Events)
 - Python 3.11+
-- [guppi-cli](https://github.com/agent-skills/guppi-cli) (for `guppi skill install`)
+- [guppi-cli](https://github.com/agent-skills/guppi-cli) (for `guppi skills install`)

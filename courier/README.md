@@ -128,6 +128,6 @@ Bot tokens are stored in guppi-locker (not in config files).
 ## Prerequisites
 
 - Python 3.11+
-- [guppi-cli](https://github.com/agent-skills/guppi-cli) (for `guppi skill install`)
+- [guppi-cli](https://github.com/agent-skills/guppi-cli) (for `guppi skills install`)
 - [guppi-locker](../locker/) (for secure token storage)
 - A Telegram bot token from [@BotFather](https://t.me/BotFather)

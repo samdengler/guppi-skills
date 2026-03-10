@@ -174,7 +174,9 @@ def inbox(
 
 
 @app.command()
-def bots():
+def bots(
+    json_output: Annotated[bool, typer.Option("--json", help="Output as JSON")] = False,
+):
     """List registered bots and their status."""
     cfg = config.load_config()
     if not cfg["bots"]:
@@ -182,27 +184,40 @@ def bots():
         return
 
     default_name = cfg.get("default")
-    table = Table(show_header=True)
-    table.add_column("Bot")
-    table.add_column("Status")
+    data: list[dict] = []
 
     for name, bot_cfg in cfg["bots"].items():
-        parts: list[str] = []
         has_tok = config.has_token(name)
         has_chat = config.get_chat_id(name) is not None
 
         if not has_tok:
-            parts.append("token missing")
+            status = "token missing"
         elif not has_chat:
             bot_username = bot_cfg.get("name", name)
-            parts.append(f"needs first message — open @{bot_username} in Telegram")
+            status = f"needs first message — open @{bot_username} in Telegram"
         else:
-            parts.append("ready")
+            status = "ready"
 
-        if name == default_name:
+        data.append({
+            "bot": name,
+            "status": status,
+            "default": name == default_name,
+        })
+
+    if json_output:
+        import json
+        typer.echo(json.dumps(data, indent=2))
+        return
+
+    table = Table(show_header=True)
+    table.add_column("Bot")
+    table.add_column("Status")
+
+    for entry in data:
+        parts: list[str] = [entry["status"]]
+        if entry["default"]:
             parts.append("(default)")
-
-        table.add_row(name, " ".join(parts))
+        table.add_row(entry["bot"], " ".join(parts))
 
     console.print(table)
 

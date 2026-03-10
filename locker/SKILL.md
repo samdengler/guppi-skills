@@ -4,7 +4,7 @@ description: >
   Deterministic secret storage for guppi skills. Use when you need to store,
   retrieve, or manage API tokens and secrets across guppi skills.
 allowed-tools: "Bash(guppi-locker:*)"
-version: "0.1.1"
+version: "0.1.2"
 author: "Sam Dengler"
 license: "MIT"
 ---

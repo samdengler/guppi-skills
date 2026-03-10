@@ -1,6 +1,6 @@
 [project]
 name = "guppi-snapper"
-version = "0.1.1"
+version = "0.1.2"
 description = "CDP browser screenshots for capturing authenticated web pages"
 requires-python = ">=3.11"
 dependencies = [

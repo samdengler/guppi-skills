@@ -39,10 +39,13 @@ def prefs(
     show: Annotated[
         bool, typer.Option("--show", "-s", help="Show current screenshot preferences")
     ] = False,
+    json_output: Annotated[
+        bool, typer.Option("--json", help="Output as JSON")
+    ] = False,
 ):
     """View or set macOS screenshot preferences."""
     if show or (location is None and format is None):
-        _show_prefs()
+        _show_prefs(json_output=json_output)
         return
 
     if location is not None:
@@ -52,16 +55,8 @@ def prefs(
         _set_pref("type", format)
 
 
-def _show_prefs():
+def _show_prefs(*, json_output: bool = False):
     """Display current screenshot preferences."""
-    from rich.console import Console
-    from rich.table import Table
-
-    console = Console()
-    table = Table(title="Screenshot Preferences")
-    table.add_column("Setting", style="bold")
-    table.add_column("Value")
-
     prefs = {
         "location": _read_pref("location", "~/Desktop"),
         "type": _read_pref("type", "png"),
@@ -70,6 +65,19 @@ def _show_prefs():
         "include-date": _read_pref("include-date", "true"),
         "show-thumbnail": _read_pref("show-thumbnail", "true"),
     }
+
+    if json_output:
+        import json
+        typer.echo(json.dumps(prefs, indent=2))
+        return
+
+    from rich.console import Console
+    from rich.table import Table
+
+    console = Console()
+    table = Table(title="Screenshot Preferences")
+    table.add_column("Setting", style="bold")
+    table.add_column("Value")
 
     for key, value in prefs.items():
         table.add_row(key, str(value))

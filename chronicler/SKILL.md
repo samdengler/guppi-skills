@@ -4,7 +4,7 @@ description: >
   Research historical events from local history sources (Chrome, terminal).
   Use when you need to find what happened, when it happened, or retrace activity.
 allowed-tools: "Bash(guppi-chronicler:*)"
-version: "0.1.1"
+version: "0.1.2"
 author: "Sam Dengler"
 license: "MIT"
 ---

@@ -105,6 +105,7 @@ def start(
 @app.command()
 def status(
     port: Annotated[int, typer.Option(help="CDP port")] = 9222,
+    json_output: Annotated[bool, typer.Option("--json", help="Output as JSON")] = False,
 ):
     """Check if Chromium is running with CDP and show connection info."""
     from guppi_snapper.browser import get_cdp_info, list_tabs, load_state
@@ -119,12 +120,29 @@ def status(
         typer.echo("Chromium state file exists but CDP is not responding")
         raise typer.Exit(1)
 
+    tabs = list_tabs(state["port"])
+
+    if json_output:
+        import json
+        data = {
+            "port": state["port"],
+            "profile": state["profile"],
+            "pid": state["pid"],
+            "browser": info.get("Browser", "unknown"),
+            "tabs": [
+                {"title": tab.get("title", "untitled"), "url": tab.get("url", "")}
+                for tab in (tabs or [])
+            ],
+            "tab_count": len(tabs) if tabs else 0,
+        }
+        typer.echo(json.dumps(data, indent=2))
+        return
+
     typer.echo(f"Chromium CDP active on port {state['port']}")
     typer.echo(f"Profile: {state['profile']}")
     typer.echo(f"PID: {state['pid']}")
     typer.echo(f"Browser: {info.get('Browser', 'unknown')}")
 
-    tabs = list_tabs(state["port"])
     if tabs:
         typer.echo(f"Tabs: {len(tabs)}")
         for tab in tabs[:10]:
@@ -212,7 +230,9 @@ app.add_typer(profile_app, name="profile")
 
 
 @profile_app.command("list")
-def profile_list():
+def profile_list(
+    json_output: Annotated[bool, typer.Option("--json", help="Output as JSON")] = False,
+):
     """List available profiles."""
     from rich.console import Console
     from rich.table import Table
@@ -222,19 +242,21 @@ def profile_list():
     console = Console()
     pdir = profiles_dir()
     if not pdir.is_dir():
+        if json_output:
+            typer.echo("[]")
+            return
         console.print("No profiles found")
         raise typer.Exit()
 
     profiles = sorted(d for d in pdir.iterdir() if d.is_dir())
     if not profiles:
+        if json_output:
+            typer.echo("[]")
+            return
         console.print("No profiles found")
         raise typer.Exit()
 
-    table = Table(title="Browser Profiles")
-    table.add_column("Name")
-    table.add_column("Last Modified")
-    table.add_column("Size")
-
+    profile_data = []
     for p in profiles:
         stat = p.stat()
         from datetime import datetime
@@ -247,7 +269,25 @@ def profile_list():
             size_str = f"{size / 1_000:.1f} KB"
         else:
             size_str = f"{size} B"
-        table.add_row(p.name, mtime, size_str)
+        profile_data.append({
+            "name": p.name,
+            "last_modified": mtime,
+            "size": size_str,
+            "size_bytes": size,
+        })
+
+    if json_output:
+        import json
+        typer.echo(json.dumps(profile_data, indent=2))
+        return
+
+    table = Table(title="Browser Profiles")
+    table.add_column("Name")
+    table.add_column("Last Modified")
+    table.add_column("Size")
+
+    for entry in profile_data:
+        table.add_row(entry["name"], entry["last_modified"], entry["size"])
 
     console.print(table)
 

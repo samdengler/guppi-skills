@@ -1,6 +1,6 @@
 [project]
 name = "guppi-shooter"
-version = "0.1.1"
+version = "0.1.2"
 description = "Screenshot manager — set preferences and manage screen captures"
 requires-python = ">=3.11"
 dependencies = [

@@ -116,16 +116,28 @@ def delete(
 @app.command("list")
 def list_cmd(
     service: Annotated[str | None, typer.Argument(help="Filter by service name")] = None,
+    json_output: Annotated[bool, typer.Option("--json", help="Output as JSON")] = False,
 ):
     """List secrets. Never prints secret values."""
     _require_init()
     secrets = vault.list_secrets(service)
 
     if not secrets:
+        if json_output:
+            import json
+            typer.echo(json.dumps([], indent=2))
+            return
         if service:
             typer.echo(f"No secrets found for service '{service}'.")
         else:
             typer.echo("No secrets found.")
+        return
+
+    data = [{"service": svc, "key": key} for svc, key in secrets]
+
+    if json_output:
+        import json
+        typer.echo(json.dumps(data, indent=2))
         return
 
     if service:

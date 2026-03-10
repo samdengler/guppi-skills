@@ -72,6 +72,7 @@ def add(
 def list_items(
     tag: Annotated[str | None, typer.Option("--tag", "-t", help="Filter by tag")] = None,
     all_items: Annotated[bool, typer.Option("--all", "-a", help="Include closed items")] = False,
+    json_output: Annotated[bool, typer.Option("--json", help="Output as JSON")] = False,
 ):
     """List tracked items."""
     _require_beads()
@@ -93,8 +94,23 @@ def list_items(
         issues = []
 
     if not issues:
-        typer.echo("No items found.")
+        if json_output:
+            typer.echo(json.dumps([], indent=2))
+        else:
+            typer.echo("No items found.")
         raise typer.Exit()
+
+    if json_output:
+        data = [
+            {
+                "id": issue.get("id", ""),
+                "title": issue.get("title", ""),
+                "tags": issue.get("labels", []),
+            }
+            for issue in issues
+        ]
+        typer.echo(json.dumps(data, indent=2))
+        return
 
     table = Table(show_header=True, header_style="bold")
     table.add_column("ID", style="dim")

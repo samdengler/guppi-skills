@@ -257,6 +257,7 @@ def new(
 def list_spikes(
     all_spikes: Annotated[bool, typer.Option("--all", "-a", help="Include done spikes")] = False,
     status: Annotated[str | None, typer.Option("--status", help="Filter by status (open, in_progress, deferred, closed)")] = None,
+    json_output: Annotated[bool, typer.Option("--json", help="Output as JSON")] = False,
 ):
     """List all spikes with metadata, most recent first."""
     spikes = _list_spikes(_get_spiker_root())
@@ -290,19 +291,38 @@ def list_spikes(
         typer.echo("No spikes found.")
         raise typer.Exit()
 
+    # Build structured data for all spikes
+    data = []
+    for spike_date, slug, path in spikes:
+        dirname = path.name
+        issue = issue_map.get(dirname)
+        summary = issue.get("description", "") if issue else ""
+        issue_status = issue.get("status", "open") if issue else "open"
+        labels = issue.get("labels", []) if issue else []
+        data.append({
+            "date": spike_date,
+            "slug": slug,
+            "summary": summary,
+            "status": issue_status,
+            "tags": labels,
+            "path": str(path),
+        })
+
+    if json_output:
+        typer.echo(json.dumps(data, indent=2))
+        return
+
     table = Table(show_header=True, header_style="bold")
     table.add_column("Date", style="dim")
     table.add_column("Slug")
     table.add_column("Summary", style="italic")
 
-    for spike_date, slug, path in spikes:
-        dirname = path.name
-        issue = issue_map.get(dirname)
-        summary = issue.get("description", "") if issue else ""
+    for item in data:
+        summary = item["summary"]
         # Truncate long summaries
         if len(summary) > 60:
             summary = summary[:57] + "..."
-        table.add_row(spike_date, slug, summary)
+        table.add_row(item["date"], item["slug"], summary)
 
     console.print(table)
 

@@ -39,11 +39,30 @@ app.add_typer(source_app, name="source")
 
 
 @source_app.command("list")
-def source_list():
+def source_list(
+    json_output: Annotated[bool, typer.Option("--json", help="Output as JSON")] = False,
+):
     """List registered sources and their status."""
     sources = config.get_sources()
     if not sources:
         console.print("No sources registered. Run 'guppi-chronicler source detect' to get started.")
+        return
+
+    data = []
+    for name, src in sources.items():
+        adapter = get_adapter(name, src["type"], src.get("path"))
+        avail = adapter.available()
+        data.append({
+            "name": name,
+            "type": src["type"],
+            "enabled": src.get("enabled", True),
+            "available": avail,
+            "path": src.get("path") or "(default)",
+        })
+
+    if json_output:
+        import json
+        typer.echo(json.dumps(data, indent=2))
         return
 
     table = Table()
@@ -53,15 +72,13 @@ def source_list():
     table.add_column("Available")
     table.add_column("Path")
 
-    for name, src in sources.items():
-        adapter = get_adapter(name, src["type"], src.get("path"))
-        avail = adapter.available()
+    for item in data:
         table.add_row(
-            name,
-            src["type"],
-            "yes" if src.get("enabled", True) else "no",
-            "yes" if avail else "[red]no[/red]",
-            src.get("path") or "(default)",
+            item["name"],
+            item["type"],
+            "yes" if item["enabled"] else "no",
+            "yes" if item["available"] else "[red]no[/red]",
+            item["path"],
         )
 
     console.print(table)
@@ -218,6 +235,7 @@ def search(
     until: Annotated[str | None, typer.Option("--until", help="Results before this date/time")] = None,
     limit: Annotated[int, typer.Option("--limit", "-n", help="Max results")] = 50,
     timeout: Annotated[float, typer.Option("--timeout", "-t", help="Max seconds to wait")] = 10.0,
+    json_output: Annotated[bool, typer.Option("--json", help="Output as JSON")] = False,
 ):
     """Search history across all enabled sources."""
     # Parse dates
@@ -281,6 +299,10 @@ def search(
             source_status[name] = "timed out"
 
     if not all_entries:
+        if json_output:
+            import json
+            typer.echo(json.dumps([], indent=2))
+            return
         console.print("No results found.")
         _print_source_status(source_status)
         return
@@ -292,6 +314,20 @@ def search(
 
     # Apply global limit
     combined = (dated + undated)[:limit]
+
+    if json_output:
+        import json
+        data = [
+            {
+                "time": entry.timestamp.isoformat() if entry.timestamp else None,
+                "source": entry.source,
+                "kind": entry.kind,
+                "summary": entry.summary,
+            }
+            for entry in combined
+        ]
+        typer.echo(json.dumps(data, indent=2))
+        return
 
     # Render table
     table = Table()

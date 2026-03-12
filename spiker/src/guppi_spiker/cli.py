@@ -255,12 +255,17 @@ def new(
 
 @app.command("list")
 def list_spikes(
+    query: Annotated[str | None, typer.Argument(help="Filter spikes by substring match on slug")] = None,
     all_spikes: Annotated[bool, typer.Option("--all", "-a", help="Include done spikes")] = False,
     status: Annotated[str | None, typer.Option("--status", help="Filter by status (open, in_progress, deferred, closed)")] = None,
     json_output: Annotated[bool, typer.Option("--json", help="Output as JSON")] = False,
 ):
     """List all spikes with metadata, most recent first."""
     spikes = _list_spikes(_get_spiker_root())
+
+    # Filter by query if provided
+    if query:
+        spikes = [(d, s, p) for d, s, p in spikes if query.lower() in s.lower()]
     if not spikes:
         typer.echo("No spikes found.")
         raise typer.Exit()
@@ -327,48 +332,12 @@ def list_spikes(
     console.print(table)
 
 
-@app.command()
-def find(
-    query: Annotated[str, typer.Argument(help="Substring to search for in spike names and metadata")],
-):
-    """Search spikes by slug, summary, and tags."""
-    spikes = _list_spikes(_get_spiker_root())
-    slug_matches = {p.name for _, _, p in spikes if query.lower() in _.lower()}
-    # _ above is slug — let me be explicit
-    slug_matches = set()
-    for _, slug, path in spikes:
-        if query.lower() in slug.lower():
-            slug_matches.add(path.name)
-
-    # Also search beads if available
-    beads_matches: set[str] = set()
-    if _store.available() and _store.initialized:
-        result = _store.run(["search", query, "--json"])
-        if result.returncode == 0:
-            import json
-            try:
-                for issue in json.loads(result.stdout):
-                    beads_matches.add(issue.get("title", ""))
-            except (json.JSONDecodeError, ValueError):
-                pass
-
-    # Merge: find spikes whose dirname is in either set
-    all_match_dirnames = slug_matches | beads_matches
-    matches = [(d, s, p) for d, s, p in spikes if p.name in all_match_dirnames]
-
-    if not matches:
-        typer.echo(f"No spikes matching '{query}'.")
-        raise typer.Exit(1)
-
-    for _, _, path in matches:
-        typer.echo(str(path))
-
 
 @app.command()
-def path(
+def go(
     query: Annotated[str, typer.Argument(help="Substring to match (returns most recent)")],
 ):
-    """Print the path to the most recent matching spike."""
+    """Print the path to the most recent matching spike. Use with: cd $(guppi-spiker go foo)"""
     spikes = _list_spikes(_get_spiker_root())
     for _, slug, spike_path in spikes:
         if query.lower() in slug.lower():

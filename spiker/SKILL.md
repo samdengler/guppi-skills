@@ -4,7 +4,7 @@ description: >
   Manage experimental spike projects in a centralized, searchable location.
   Use when you need to create, find, or navigate to spike/experiment directories.
 allowed-tools: "Bash(guppi-spiker:*)"
-version: "0.3.2"
+version: "0.4.0"
 author: "Sam Dengler"
 license: "MIT"
 ---
@@ -33,9 +33,9 @@ guppi-spiker new                  # ~/src/spikes/2026-02-12-fuzzy-teal-otter/
 guppi-spiker new redis-test --summary "Testing pub/sub for notifications"
 ```
 
-### `guppi-spiker list`
+### `guppi-spiker list [query]`
 
-List all spikes with summaries, most recent first.
+List all spikes with summaries, most recent first. Optional query filters by slug substring.
 
 **Options:**
 - `--all` / `-a` — include done (closed) spikes
@@ -43,24 +43,17 @@ List all spikes with summaries, most recent first.
 
 ```bash
 guppi-spiker list
+guppi-spiker list redis
 guppi-spiker list --all
 guppi-spiker list --status deferred
 ```
 
-### `guppi-spiker find <query>`
-
-Search spikes by slug, summary, and tags.
-
-```bash
-guppi-spiker find redis
-```
-
-### `guppi-spiker path <query>`
+### `guppi-spiker go <query>`
 
 Print the path to the most recent matching spike. Use with `cd $(...)`.
 
 ```bash
-cd $(guppi-spiker path redis)
+cd $(guppi-spiker go redis)
 ```
 
 ### `guppi-spiker describe <query> <summary>`

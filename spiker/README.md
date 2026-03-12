@@ -27,8 +27,8 @@ guppi-spiker new
 # See what you've been working on
 guppi-spiker list
 
-# Jump into a spike
-cd $(guppi-spiker path redis)
+# Jump into a spike (use a shell alias: gsg() { cd "$(guppi-spiker go "$@")"; })
+gsg redis
 ```
 
 ## What to expect
@@ -76,23 +76,23 @@ Create a new spike. If `name` is omitted, generates a random one (e.g., `fuzzy-t
 - `--summary` / `-s` — one-line description
 - `--no-git` — skip git init
 
-### `guppi-spiker list`
+### `guppi-spiker list [query]`
 
-List all spikes, most recent first.
+List all spikes, most recent first. Optional query filters by slug substring.
 
 - `--all` / `-a` — include done/closed spikes
 - `--status` — filter by status (open, in_progress, deferred, closed)
 
-### `guppi-spiker find <query>`
-
-Search spikes by slug, summary, and tags.
-
-### `guppi-spiker path <query>`
+### `guppi-spiker go <query>`
 
 Print the path to the most recent matching spike. Designed for shell composition:
 
 ```bash
-cd $(guppi-spiker path redis)
+cd $(guppi-spiker go redis)
+
+# Or define a shell function for convenience:
+# gsg() { cd "$(guppi-spiker go "$@")"; }
+gsg redis
 ```
 
 ### `guppi-spiker describe <query> <summary>`

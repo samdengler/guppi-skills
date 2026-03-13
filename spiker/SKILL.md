@@ -4,7 +4,7 @@ description: >
   Manage experimental spike projects in a centralized, searchable location.
   Use when you need to create, find, or navigate to spike/experiment directories.
 allowed-tools: "Bash(guppi-spiker:*)"
-version: "0.4.0"
+version: "0.4.1"
 author: "Sam Dengler"
 license: "MIT"
 ---

@@ -126,6 +126,29 @@ CLAUDE_SETTINGS_PATH = Path.home() / ".claude" / "settings.json"
 
 HOOK_COMMAND = "guppi-spiker summarize --from-hook"
 
+GSG_FUNCTION = 'gsg() { cd "$(guppi-spiker go "$@")"; }\n'
+
+
+def _get_shell_rc() -> Path:
+    """Get the user's shell RC file."""
+    shell = os.environ.get("SHELL", "")
+    if "zsh" in shell:
+        return Path.home() / ".zshrc"
+    return Path.home() / ".bashrc"
+
+
+def _gsg_installed(rc_path: Path) -> bool:
+    """Check if the gsg function is already in the shell RC file."""
+    if not rc_path.is_file():
+        return False
+    return "gsg()" in rc_path.read_text()
+
+
+def _install_gsg(rc_path: Path) -> None:
+    """Append the gsg shell function to the RC file."""
+    with open(rc_path, "a") as f:
+        f.write(f"\n# guppi-spiker: jump to spike directory\n{GSG_FUNCTION}")
+
 
 def _read_claude_settings() -> dict:
     """Read ~/.claude/settings.json, returning empty dict if missing."""
@@ -173,7 +196,7 @@ def _install_hook(settings: dict) -> dict:
 
 @app.command()
 def init():
-    """One-time per-machine setup (Claude Code SessionEnd hook for auto-summarize)."""
+    """One-time per-machine setup (hook, shell function, beads store)."""
     settings = _read_claude_settings()
     if _hook_installed(settings):
         typer.echo("SessionEnd hook already installed.")
@@ -182,13 +205,21 @@ def init():
         _write_claude_settings(settings)
         typer.echo("Installed SessionEnd hook for auto-summarize.")
 
+    # Install gsg shell function
+    rc_path = _get_shell_rc()
+    if _gsg_installed(rc_path):
+        typer.echo(f"gsg() already in {rc_path.name}.")
+    else:
+        _install_gsg(rc_path)
+        typer.echo(f"Added gsg() to {rc_path.name}. Run: source ~/{rc_path.name}")
+
     # Ensure beads store is initialized
     if _store.ensure():
         typer.echo("Beads store ready.")
     else:
         typer.echo("Warning: could not initialize beads store.", err=True)
 
-    typer.echo("Spiker initialized. Spikes will be auto-summarized on session end.")
+    typer.echo("Spiker initialized.")
 
 
 # --- Domain commands ---

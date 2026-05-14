@@ -28,8 +28,8 @@ Create a new spike directory.
 
 **Examples:**
 ```bash
-guppi-spiker new redis-caching    # ~/src/spikes/2026-02-12-redis-caching/
-guppi-spiker new                  # ~/src/spikes/2026-02-12-fuzzy-teal-otter/
+guppi-spiker new redis-caching    # ~/spikes/2026-02-12-redis-caching/
+guppi-spiker new                  # ~/spikes/2026-02-12-fuzzy-teal-otter/
 guppi-spiker new redis-test --summary "Testing pub/sub for notifications"
 ```
 
@@ -90,7 +90,7 @@ guppi-spiker done redis
 
 ## Configuration
 
-Set `SPIKER_PATH` env var to change the spike root directory (default: `~/src/spikes`).
+Set `SPIKER_PATH` env var to change the spike root directory (default: `~/spikes`).
 
 ## Skill Management
 

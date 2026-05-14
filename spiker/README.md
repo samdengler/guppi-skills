@@ -6,7 +6,7 @@ Manage experimental spike projects in a centralized, searchable location.
 
 ## What it does
 
-Spiker gives every experiment a home. Instead of scattering throwaway projects across your filesystem, spiker keeps them in one directory (`~/src/spikes/` by default), date-stamped and searchable. Each spike gets tracked with metadata — summaries, tags, and lifecycle status — so you can find that Redis caching experiment from three weeks ago without digging through folders.
+Spiker gives every experiment a home. Instead of scattering throwaway projects across your filesystem, spiker keeps them in one directory (`~/spikes/` by default), date-stamped and searchable. Each spike gets tracked with metadata — summaries, tags, and lifecycle status — so you can find that Redis caching experiment from three weeks ago without digging through folders.
 
 ## When to use it
 
@@ -125,7 +125,7 @@ Hook-only command called by the SessionEnd hook. Not intended for manual use —
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `SPIKER_PATH` | `~/src/spikes` | Root directory for all spikes |
+| `SPIKER_PATH` | `~/spikes` | Root directory for all spikes |
 
 ## Prerequisites
 

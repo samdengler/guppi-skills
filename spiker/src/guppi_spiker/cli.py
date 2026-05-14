@@ -68,7 +68,7 @@ guppi-spiker done {slug}  # if the spike is complete
 
 def _get_spiker_root() -> Path:
     """Get the spike root directory from SPIKER_PATH env var or default."""
-    return Path(os.environ.get("SPIKER_PATH", Path.home() / "src" / "spikes"))
+    return Path(os.environ.get("SPIKER_PATH", Path.home() / "spikes"))
 
 
 def _generate_name() -> str:

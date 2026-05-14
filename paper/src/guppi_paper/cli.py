@@ -31,10 +31,26 @@ def main(
 
 @app.command()
 def prompt(
-    url: Annotated[str, typer.Argument(help="URL of the academic paper (e.g. https://arxiv.org/pdf/2509.07604)")],
+    source: Annotated[str, typer.Argument(help="URL or local file path of the paper")],
 ):
-    """Output the hydrated Feynman Technique analysis prompt for a paper URL."""
-    typer.echo(hydrate(url))
+    """Output the hydrated Feynman Technique analysis prompt for a paper."""
+    path = Path(source)
+    if path.is_file():
+        if path.suffix == ".pdf":
+            try:
+                result = subprocess.run(
+                    ["pdftotext", str(path), "-"],
+                    capture_output=True, text=True, check=True,
+                )
+            except FileNotFoundError:
+                typer.echo("Error: pdftotext not found. Install with: brew install poppler", err=True)
+                raise typer.Exit(1)
+            content = result.stdout
+        else:
+            content = path.read_text()
+        typer.echo(hydrate(source, content=content))
+    else:
+        typer.echo(hydrate(source))
 
 
 @app.command()

@@ -17,9 +17,10 @@ Analyzes academic papers using the Feynman Technique, producing structured markd
 
 When invoked as `/paper <url>`, follow these steps:
 
-1. **Parse arguments**: Extract the paper URL from `$ARGUMENTS`. Check for a `--no-pdf` flag (if present, skip step 7).
+1. **Parse arguments**: Extract the paper source (URL or local file path) from `$ARGUMENTS`. Check for a `--no-pdf` flag (if present, skip step 7).
 
 2. **Fetch the paper**:
+   - **Local file** (path exists on disk): If PDF, extract text with `pdftotext <path> -`. If text/markdown, read directly. Skip download.
    - **PDF URL** (ends in `.pdf`, contains `/pdf/`, or is a known PDF-serving pattern like arxiv.org/pdf/): Download with `curl -sL -o /tmp/<id>.pdf <url>`, then extract text with `pdftotext /tmp/<id>.pdf /tmp/<id>.txt` and read the resulting text file.
    - **HTML URL**: Use `WebFetch` to retrieve and convert the content to markdown.
    - **Fallback**: If `WebFetch` returns binary/garbage content, the URL is likely a PDF — fall back to the curl + pdftotext approach.
@@ -29,6 +30,7 @@ When invoked as `/paper <url>`, follow these steps:
 4. **Create output directory**: Create the folder in the current working directory.
 
 5. **Save source material**: Save the original content into the output directory:
+   - **Local file**: Copy the file to `<slug>/<slug>.<ext>`
    - **PDF source**: Copy the downloaded PDF to `<slug>/<slug>.pdf`
    - **HTML source**: Write the markdown conversion to `<slug>/<slug>-source.md`
 
@@ -89,12 +91,13 @@ Structure the response with clear markdown headers. Include:
 
 ## CLI Commands
 
-### `guppi-paper prompt <url>`
+### `guppi-paper prompt <source>`
 
-Output the hydrated analysis prompt to stdout.
+Output the hydrated analysis prompt to stdout. Accepts a URL or local file path.
 
 ```bash
 guppi-paper prompt https://arxiv.org/pdf/2509.07604
+guppi-paper prompt ./paper.pdf
 guppi-paper prompt https://arxiv.org/pdf/2509.07604 | pbcopy
 ```
 

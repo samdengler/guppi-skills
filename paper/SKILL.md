@@ -3,7 +3,7 @@ name: paper
 description: >
   Analyze academic papers using the Feynman Technique.
   Use when you need to create a clear, structured explanation of an academic paper.
-allowed-tools: "Bash(guppi-paper:*), Bash(curl:*), Bash(pdftotext:*), WebFetch, Read, Write"
+allowed-tools: "Bash(guppi-paper:*), Bash(curl:*), WebFetch, Read, Write"
 version: "0.1.1"
 author: "Sam Dengler"
 license: "MIT"
@@ -20,10 +20,10 @@ When invoked as `/paper <url>`, follow these steps:
 1. **Parse arguments**: Extract the paper source (URL or local file path) from `$ARGUMENTS`. Check for a `--no-pdf` flag (if present, skip step 7).
 
 2. **Fetch the paper**:
-   - **Local file** (path exists on disk): If PDF, extract text with `pdftotext <path> -`. If text/markdown, read directly. Skip download.
-   - **PDF URL** (ends in `.pdf`, contains `/pdf/`, or is a known PDF-serving pattern like arxiv.org/pdf/): Download with `curl -sL -o /tmp/<id>.pdf <url>`, then extract text with `pdftotext /tmp/<id>.pdf /tmp/<id>.txt` and read the resulting text file.
+   - **Local file** (path exists on disk): If PDF, extract text with `guppi-paper prompt <path>` (uses pymupdf). If text/markdown, read directly. Skip download.
+   - **PDF URL** (ends in `.pdf`, contains `/pdf/`, or is a known PDF-serving pattern like arxiv.org/pdf/): Download with `curl -sL -o /tmp/<id>.pdf <url>`, then extract text with `guppi-paper prompt /tmp/<id>.pdf` and use the output.
    - **HTML URL**: Use `WebFetch` to retrieve and convert the content to markdown.
-   - **Fallback**: If `WebFetch` returns binary/garbage content, the URL is likely a PDF — fall back to the curl + pdftotext approach.
+   - **Fallback**: If `WebFetch` returns binary/garbage content, the URL is likely a PDF — fall back to the curl + guppi-paper prompt approach.
 
 3. **Derive folder name**: From the paper title, create a descriptive kebab-case slug (e.g., `agent-first-database-systems`). Do NOT use the arxiv ID or URL path — use the actual paper title.
 

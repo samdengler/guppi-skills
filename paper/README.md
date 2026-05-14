@@ -37,7 +37,7 @@ guppi-paper pdf agent-first-database-systems/agent-first-database-systems-analys
 
 When you invoke `/paper <url>` as an agent skill, it:
 
-1. Fetches the paper (PDF via curl + pdftotext, or HTML via WebFetch)
+1. Fetches the paper (PDF via pymupdf, or HTML via WebFetch)
 2. Derives a kebab-case folder name from the paper title
 3. Creates an output directory in your current working directory
 4. Saves the source material (PDF or markdown) into the folder
@@ -78,4 +78,3 @@ The PDF is written alongside the markdown file with the same name and a `.pdf` e
 - Python 3.11+
 - [guppi-cli](https://github.com/agent-skills/guppi-cli) (for `guppi skills install`)
 - `pandoc` and `basictex` for PDF conversion (`brew install pandoc basictex`)
-- `pdftotext` for extracting text from PDF papers (part of `poppler`: `brew install poppler`)

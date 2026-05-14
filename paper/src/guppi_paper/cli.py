@@ -37,15 +37,10 @@ def prompt(
     path = Path(source)
     if path.is_file():
         if path.suffix == ".pdf":
-            try:
-                result = subprocess.run(
-                    ["pdftotext", str(path), "-"],
-                    capture_output=True, text=True, check=True,
-                )
-            except FileNotFoundError:
-                typer.echo("Error: pdftotext not found. Install with: brew install poppler", err=True)
-                raise typer.Exit(1)
-            content = result.stdout
+            import pymupdf
+            doc = pymupdf.open(str(path))
+            content = "\n".join(page.get_text() for page in doc)
+            doc.close()
         else:
             content = path.read_text()
         typer.echo(hydrate(source, content=content))

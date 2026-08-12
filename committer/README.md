@@ -42,6 +42,22 @@ guppi skills install committer     # install and register
 cd <your-repo> && guppi-committer init   # optional: enforce via git hook
 ```
 
+## Vale integration (optional)
+
+With [Vale](https://vale.sh) installed, `check` also lints the message
+against the Google developer documentation style package and an STE style
+generated from committer's own word lists:
+
+```bash
+brew install vale
+guppi-committer vale-setup    # writes config, runs vale sync
+```
+
+The config lives in `~/.config/guppi/committer/vale/`. After setup, every
+`check` (including the git hook) reports Vale alerts as warnings with
+`vale:` rule prefixes, for example `vale:Google.Passive`. Use `--no-vale`
+to skip it, `--vale` to require it, or `--strict` to make the alerts fatal.
+
 ## Usage
 
 ```bash

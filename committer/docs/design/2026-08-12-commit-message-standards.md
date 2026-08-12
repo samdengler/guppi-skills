@@ -45,9 +45,19 @@ Decisions:
   72-character limit. Trailers and code are also exempt from prose rules.
 - Auto-generated subjects (`Merge`, `Revert`, `fixup!`, `squash!`) skip
   subject rules.
-- Stdlib only, plus the standard Typer and Rich dependencies. No Vale
-  dependency: the built-in checks cover commit-sized prose, and requiring a
-  separate binary would complicate the hook.
+- Stdlib only, plus the standard Typer and Rich dependencies. The built-in
+  checks cover commit-sized prose without any external binary.
+
+### Vale integration
+
+`vale-setup` writes a Vale config to `~/.config/guppi/committer/vale/`:
+the Google package via `Packages = Google`, plus an STE style whose
+substitution and filler rules are generated from the word lists in
+`checks.py`, so the two layers cannot drift apart. `check` runs Vale
+automatically when the binary and config both exist (`--vale` forces,
+`--no-vale` skips). Alerts map to warnings with `vale:` rule prefixes;
+suggestions downgrade to warnings. Vale stays optional so the hook works
+on machines without it.
 
 ### ASD-STE100 licensing
 
@@ -58,8 +68,6 @@ rejections rather than trying to encode the full spec.
 
 ## Future work
 
-- Optional Vale integration: if a `vale` binary and config exist, run it on
-  the message body for the full Google style package.
 - Conventional Commits mode (`type: subject` prefixes) as an opt-in flag or
   config, layered on the same 50/72 rules.
 - Per-repo config for word lists and limits

@@ -67,6 +67,19 @@ errors, and prints each violation with a line number, severity, and rule id.
 **Options:**
 - `--strict` — fail on warnings as well as errors
 - `--json` — output violations as JSON
+- `--vale` / `--no-vale` — force or skip Vale; the default runs Vale only
+  when the binary is installed and `vale-setup` has been run
+- `--vale-config` — use a specific Vale config file
+
+### `guppi-committer vale-setup`
+
+Write the Vale config (Google developer documentation style package plus an
+STE approximation) and download the packages with `vale sync`. Requires the
+`vale` binary. Idempotent. After setup, `check` runs Vale automatically and
+reports its alerts as warnings with `vale:` rule prefixes.
+
+**Options:**
+- `--no-sync` — write the config without downloading packages
 
 ### `guppi-committer init`
 

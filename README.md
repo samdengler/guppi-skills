@@ -16,6 +16,7 @@ This means skills are testable, composable, and useful even without an AI agent.
 |-------|---------|--------|-------------|
 | [chronicler](chronicler/) | 0.1.0 | Active | Research historical events from local history sources |
 | [clipper](clipper/) | 0.1.0 | Active | Copy content to the system clipboard without whitespace noise |
+| [dotfiles](dotfiles/) | 0.1.0 | Active | Add, remove, and reconcile machine dependencies through the dotfiles manifests |
 | [courier](courier/) | 0.1.0 | Active | Telegram-based messaging for Claude workflows |
 | [futzer](futzer/) | 0.1.0 | Experimental | Opinionated config generator you own and understand |
 | [locker](locker/) | 0.1.0 | Active | Deterministic secret storage for guppi skills |

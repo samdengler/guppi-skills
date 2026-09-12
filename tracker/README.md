@@ -1,124 +1,91 @@
 # Tracker
 
-Cross-project task and idea tracker built on beads.
+Work item tracker built on Beads, usable from Claude Code and Claude Cowork.
 
-**Status:** Active | **Version:** 0.2.0 | **Created:** 2026-03-08 | **Updated:** 2026-03-09
+**Status:** Active | **Version:** 1.0.0 | **Created:** 2026-03-08 | **Updated:** 2026-09-12
 
 ## What it does
 
-Tracker gives you a single place to capture ideas, tasks, reading lists, and async work items that span projects. Instead of scattering TODOs across sticky notes, text files, and Slack threads, tracker stores everything in beads with tags and full-text search. Items are lightweight -- a title and optional note -- so there's zero friction to capture something before it slips away.
+Tracker is a Beads (`bd`) store for work items. A work item can stand alone
+or be an epic with dependent tasks. Tasks that must run in order are linked
+with `blocks` edges; tasks with no edge between them can run in parallel.
+`bd ready` returns whatever is unblocked right now, which is what an agent
+should pick up next.
 
-## When to use it
+Version 1.0 replaced the earlier Python wrapper (`guppi-tracker`) with a
+Makefile, a shim, and a SKILL.md that call `bd` directly. The wrapper hid
+dependencies, which are the point, and could not run inside a Cowork session.
 
-- Jotting down an idea before you forget it
-- Queuing up articles, papers, or talks to read/watch later
-- Tracking a task that doesn't belong to any single project
-- Reviewing your inbox of untagged items to stay organized
-- Searching for that thing you captured last week
+## Why it works from Cowork
 
-## Quick start
+A Cowork session runs its shell in a Linux VM on the Mac. The VM sees only
+folders that have been connected to the session, and it has no `bd`. So the
+store lives in a folder that gets connected, and a Linux build of `bd` sits
+inside that folder next to a shim that picks the right binary for the host.
+Both binaries are the same pinned release. Dolt runs embedded (no server), and
+writes from either side land in the same files.
 
-```bash
-# Capture something quickly
-guppi-tracker add "Read DDIA chapter 5" --tag toread
+The Mac must be able to reach github.com to download the Linux binary once;
+the VM never needs to.
 
-# Capture an idea with a note
-guppi-tracker add "Try Plasmo for Chrome extensions" --tag idea --note "Framework for building Chrome extensions"
-
-# See what you're tracking
-guppi-tracker list
-
-# Filter by tag
-guppi-tracker list --tag toread
-
-# Find something specific
-guppi-tracker search "Chrome"
-
-# Mark it done
-guppi-tracker done trk-a3f
-```
-
-## What to expect
-
-When you run `guppi-tracker add`, it:
-
-1. Auto-initializes the beads store on first use (no setup needed)
-2. Creates a tracked item with a unique ID (e.g., `trk-a3f`)
-3. Applies any tags you specified
-4. Confirms the item was created
-
-Items are stored persistently via beads and survive across sessions, projects, and machines (if you sync your beads store).
-
-## Tag conventions
-
-Use tags to categorize items. These are suggestions, not rules -- use whatever makes sense to you.
-
-| Tag | Purpose |
-|-----|---------|
-| `toread` | Articles, papers, docs |
-| `towatch` | Videos, talks |
-| `idea` | Things to try or explore |
-| `task` | Actionable work items |
-| `followup` | Check back on later |
-| `buy` | Things to purchase |
-
-## Commands
-
-### `guppi-tracker add <title>`
-
-Add a new tracked item.
-
-- `--tag` / `-t` -- tag the item (repeatable, e.g., `--tag idea --tag backend`)
-- `--note` / `-n` -- description or note
-
-### `guppi-tracker list`
-
-List tracked items in a table with ID, title, and tags.
-
-- `--tag` / `-t` -- filter by tag
-- `--all` / `-a` -- include closed/done items
-
-### `guppi-tracker done <id>`
-
-Mark an item as done by its beads ID (e.g., `trk-a3f`). Done items are hidden from `list` unless you pass `--all`.
-
-### `guppi-tracker tag <id> <tags...>`
-
-Add one or more tags to an existing item.
+## Setup
 
 ```bash
-guppi-tracker tag trk-a3f backend caching
+# 1. bd on the Mac, pinned, via mise (already in ~/.dotfiles/mise/config.toml)
+~/.dotfiles/bootstrap.sh
+bd version                      # must match BD_VERSION in the Makefile
+
+# 2. Create the store, fetch the VM binary, install the shim
+cd ~/src/github.com/samdengler/guppi-skills/tracker
+make init
+
+# 3. Make the skill visible to Claude Code
+make install-skill
+
+# 4. Prove it
+make test
 ```
 
-### `guppi-tracker show <id>`
+Then, in the Claude desktop app, connect `~/src/github.com/samdengler/tracker`
+as a folder for any Cowork session that should use the tracker.
 
-Show full details of an item, including title, description, tags, and status.
+The store is its own git repo. Each machine has its own store; they do not
+need to share one. `issues.jsonl` is committed as the readable copy of the
+data; the Dolt files are gitignored.
 
-### `guppi-tracker search <query>`
+## Daily use
 
-Full-text search across titles and descriptions.
+From a terminal or Claude Code:
 
 ```bash
-guppi-tracker search "Chrome extension"
+cd ~/src/github.com/samdengler/tracker
+bin/bd ready
+bin/bd create "Write the Gateway design note" -p 1
+bin/bd close trk-abc -r "sent for review"
 ```
 
-### `guppi-tracker review`
+From a Cowork session the same commands work with
+`$HOME/mnt/tracker/bin/bd`. The SKILL.md carries the full vocabulary.
 
-Process your inbox -- walk through all untagged items one by one. For each item, you choose:
+Close every session that changed the store with `bin/bd export -o issues.jsonl`
+and a commit. Only one shell writes to the store at a time.
 
-- **(t)ag** -- assign tags (space-separated)
-- **(d)one** -- mark complete
-- **(s)kip** -- leave for later (default)
-- **(q)uit** -- stop reviewing
+## Makefile targets
 
-This is useful for batch-processing items you captured quickly without tags.
+| Target | What it does |
+|---|---|
+| `init` | Create the store (git init, `bd init`), download the VM binary, install the shim and AGENTS.md |
+| `vm-binary` | Download and checksum-verify the Linux `bd` into `<store>/bin/` |
+| `shim` | Reinstall `bin/bd` into the store |
+| `export` | Write `issues.jsonl` |
+| `test` | Round-trip test on a throwaway store |
+| `install-skill` | Symlink this directory into `~/.claude/skills/tracker` |
 
-## Configuration
+Variables: `BD_VERSION`, `STORE`, `PREFIX`, `VM_ARCH` (arm64 default; use
+`amd64` for an Intel Mac).
 
-Tracker has no configuration files. It stores all data in the beads store, which is managed by `guppi-beads`. Items use the `trk` prefix for their IDs.
+## Design notes
 
-## Prerequisites
-
-- Python 3.11+
-- [guppi-cli](https://github.com/agent-skills/guppi-cli) (for `guppi skills install`)
-- [guppi-beads](../lib/beads/) (for persistent storage)
+`docs/design/` holds the history. The current design is
+`2026-09-12-beads-for-cowork.md`; the earlier notes describe the retired
+Python wrapper.

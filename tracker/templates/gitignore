@@ -1,0 +1,8 @@
+# bd binaries are downloaded by `make vm-binary` in guppi-skills/tracker
+bin/bd-*
+# Dolt working files; issues.jsonl is the committed, readable copy
+.beads/embeddeddolt/
+.beads/backup/
+.beads/*.db
+.beads/*.db-*
+.beads/last-touched

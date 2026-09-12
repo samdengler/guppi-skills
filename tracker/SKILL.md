@@ -1,108 +1,118 @@
 ---
 name: tracker
 description: >
-  Cross-project task and idea tracker built on beads. Use when you need to
-  capture ideas, tasks, reading lists, or track async work across projects.
-allowed-tools: "Bash(guppi-tracker:*)"
-version: "0.2.2"
+  Work item tracker built on Beads (bd). Use it to add work items, break them
+  into dependent tasks, find what is ready to work on, claim and close tasks,
+  and record follow-ups. Works from Claude Code on the Mac and from Claude
+  Cowork sessions through the connected tracker folder.
+allowed-tools: "Bash(bin/bd:*),Bash(bd:*),Bash($HOME/mnt/tracker/bin/bd:*)"
+version: "1.0.0"
 author: "Sam Dengler"
 license: "MIT"
 ---
 
-# Tracker — cross-project task and idea tracker
+# Tracker: work items with dependencies, on Beads
 
-Track ideas, tasks, reading lists, and async work items in a single place that works across projects. Built on beads for persistent storage and agent-friendly querying.
+The store is a directory with a `.beads/` database and a `bin/bd` shim. Run
+every command through the shim; it picks the host's binary and pins the store,
+so the working directory does not matter.
+
+| Where the session runs | Command prefix |
+|---|---|
+| Claude Code or terminal on the Mac | `~/src/github.com/samdengler/tracker/bin/bd` |
+| Claude Cowork (device_bash in the VM) | `$HOME/mnt/tracker/bin/bd` |
+
+Set `BD` to the prefix once per session and use `$BD` below.
+
+## Model
+
+A work item is an issue. A work item with dependent tasks is an epic with
+child issues. Ordering is expressed only with `blocks` edges: tasks that may
+run in parallel are siblings with no edge between them; tasks that must run in
+sequence form a chain. `$BD ready` returns every open task whose blockers are
+closed, which is the set that can be worked on now, in parallel.
 
 ## Commands
 
-### `guppi-tracker add <title> [--tag TAG...] [--note "..."]`
-
-Add a new tracked item. Auto-initializes beads on first use.
-
-**Options:**
-- `--tag` / `-t` — tag the item (repeatable)
-- `--note` / `-n` — description or note
-
-**Examples:**
-```bash
-guppi-tracker add "Read DDIA chapter 5" --tag toread
-guppi-tracker add "Try Plasmo for Chrome extensions" --tag idea --note "Framework for building Chrome extensions"
-```
-
-### `guppi-tracker list [--tag TAG] [--all]`
-
-List tracked items in a table with ID, title, and tags.
-
-**Options:**
-- `--tag` / `-t` — filter by tag
-- `--all` / `-a` — include closed items
+### See what is ready
 
 ```bash
-guppi-tracker list
-guppi-tracker list --tag toread
-guppi-tracker list --all
+$BD ready                       # open, unblocked tasks
+$BD ready --explain             # same, with the reason each task is ready or blocked
+$BD list                        # all open issues
+$BD show <id>                   # one issue with its dependencies and comments
 ```
 
-### `guppi-tracker done <id>`
-
-Mark an item as done by exact beads ID.
+### Add work
 
 ```bash
-guppi-tracker done trk-a3f
+$BD create "Standalone item" -p 2
+$BD create "Bigger work item" -t epic -p 1
+$BD create "First task"  -p 1 --parent <epic-id>
+$BD create "Second task" -p 1 --parent <epic-id>
 ```
 
-### `guppi-tracker tag <id> <tags...>`
+Priority is 0 (highest) to 4. Add `-d "..."` for a description and
+`-l label` for labels.
 
-Add tags to an item.
+### Express order
 
 ```bash
-guppi-tracker tag trk-a3f backend caching
+$BD dep add <task> <blocker>          # task cannot start until blocker closes
+$BD dep add <task> --blocked-by <b>   # same, explicit form
 ```
 
-### `guppi-tracker show <id>`
+Leave sibling tasks without edges when they can run in parallel.
 
-Show full details of an item.
+### Work a task
 
 ```bash
-guppi-tracker show trk-a3f
+$BD update <id> --claim               # sets in_progress and assignee
+$BD comment <id> "what happened"      # progress note
+$BD close <id> -r "what was done"     # close with a reason
+$BD close <id> -r "..." --suggest-next   # also print what this unblocked
 ```
 
-### `guppi-tracker search <query>`
-
-Full-text search across titles and descriptions.
+### Record a follow-up discovered while working
 
 ```bash
-guppi-tracker search "Chrome extension"
+$BD create "Follow-up title" -p 2 --deps discovered-from:<current-id>
 ```
 
-### `guppi-tracker review`
+### Machine-readable output
 
-Process inbox — walk through untagged items and tag, done, or skip them.
+Every listing command accepts `--json`.
 
-For each untagged item, you'll be prompted to:
-- **(t)ag** — assign tags (space-separated)
-- **(d)one** — mark complete
-- **(s)kip** — leave for later (default)
-- **(q)uit** — stop reviewing
+## Session close
+
+Run this before ending any session that changed the store:
 
 ```bash
-guppi-tracker review
+STORE=$(dirname "$(dirname "$BD")")
+$BD export -o issues.jsonl
+git -C "$STORE" add -A && git -C "$STORE" commit -q -m "tracker: session $(date +%F)" || true
 ```
 
-## Tag Conventions
+`issues.jsonl` is the readable, committed copy of the data; the Dolt files
+under `.beads/` are the source of truth and are gitignored.
 
-| Tag | Purpose |
-|-----|---------|
-| `toread` | Articles, papers, docs |
-| `towatch` | Videos, talks |
-| `idea` | Things to try or explore |
-| `task` | Actionable work items |
-| `followup` | Check back on later |
-| `buy` | Things to purchase |
+## Rules
 
-## Skill Management
+- One writer at a time. Do not run bd from the Mac and a Cowork session at
+  the same moment.
+- Do not use TodoWrite, TaskCreate, or markdown checklists for work that
+  belongs in the tracker.
+- The bd version is pinned (see `BD_VERSION` in the Makefile and
+  `~/.dotfiles/mise/config.toml`). Do not upgrade it inside a work session.
+
+## Setup (once per machine)
 
 ```bash
-guppi-tracker skill install   # Register with guppi-cli
-guppi-tracker skill show      # Display SKILL.md contents
+cd ~/src/github.com/samdengler/guppi-skills/tracker
+make init            # creates the store, downloads the VM binary, installs the shim
+make install-skill   # links this SKILL.md into ~/.claude/skills/tracker
+make test            # round-trip test on a throwaway store
 ```
+
+Then connect `~/src/github.com/samdengler/tracker` as a folder in Claude
+Cowork. See README.md for details.

@@ -1,0 +1,26 @@
+#!/bin/sh
+# Shim installed into <store>/bin/bd. Picks the right bd for the host and
+# runs from the store directory so commands work from any working directory.
+#
+#   macOS (Claude Code, terminal):   uses bd from PATH (installed by mise)
+#   Linux VM (Claude Cowork):        uses bin/bd-linux-<arch> next to this file
+#
+# Both are the same release; see BD_VERSION in guppi-skills/tracker/Makefile.
+
+here=$(cd "$(dirname "$0")" && pwd)
+store=$(dirname "$here")
+cd "$store" || exit 1
+
+case "$(uname -s)" in
+  Darwin)
+    exec bd "$@"
+    ;;
+  Linux)
+    bin="$here/bd-linux-$(uname -m | sed 's/aarch64/arm64/; s/x86_64/amd64/')"
+    [ -x "$bin" ] || { echo "missing $bin; run 'make vm-binary' in guppi-skills/tracker on the Mac" >&2; exit 1; }
+    exec "$bin" "$@"
+    ;;
+  *)
+    echo "unsupported OS: $(uname -s)" >&2; exit 1
+    ;;
+esac

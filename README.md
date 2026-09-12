@@ -25,7 +25,7 @@ This means skills are testable, composable, and useful even without an AI agent.
 | [snapper](snapper/) | 0.1.0 | Active | CDP browser screenshots for capturing authenticated web pages |
 | [spiker](spiker/) | 0.3.0 | Active | Manage experimental spike projects in a centralized, searchable location |
 | [surfer](surfer/) | 0.1.0 | Experimental | Chrome browser automation via AppleScript JavaScript execution |
-| [tracker](tracker/) | 0.2.0 | Active | Cross-project task and idea tracker built on beads |
+| [tracker](tracker/) | 1.0.0 | Active | Work item tracker on beads for Claude Code and Cowork |
 
 ## Installation
 
@@ -52,7 +52,7 @@ guppi-locker get courier bot-token
 guppi-paper prompt https://arxiv.org/abs/2301.00001
 guppi-snapper capture https://example.com
 guppi-spiker new redis-caching
-guppi-tracker add "Try out DuckDB for analytics"
+~/src/github.com/samdengler/tracker/bin/bd ready
 ```
 
 Every skill also has a `skill` subcommand for agent integration:
